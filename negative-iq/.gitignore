@@ -2,3 +2,4 @@ node_modules/
 out/
 *.log
 __pycache__/
+final/*_full_quality.mp4
