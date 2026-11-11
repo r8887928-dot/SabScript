@@ -1,0 +1,26 @@
+{
+  "name": "negative-iq",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Что, если у всех людей на Земле внезапно станет отрицательный IQ? — вертикальный 3D-ролик (Remotion + three.js)",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts NegativeIQ out/video.mp4"
+  },
+  "dependencies": {
+    "@fontsource/montserrat": "5.3.0",
+    "@fontsource/russo-one": "5.3.0",
+    "@react-three/fiber": "9.8.2",
+    "@remotion/cli": "4.0.542",
+    "@remotion/three": "4.0.542",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.542",
+    "three": "0.180.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.2",
+    "@types/three": "0.180.0",
+    "typescript": "5.9.3"
+  }
+}
