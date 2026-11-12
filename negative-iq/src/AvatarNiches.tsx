@@ -47,7 +47,7 @@ const Helmet: React.FC = () => {
     </group>
   );
 };
-const Headset: React.FC = () => {
+export const Headset: React.FC = () => {
   const shell = mat('#1c1c26', { r: 0.35, m: 0.4 });
   return (
     <group>
