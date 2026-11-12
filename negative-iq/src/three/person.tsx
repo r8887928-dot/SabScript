@@ -90,10 +90,10 @@ export const merge = (...ps: Pose[]): Pose => Object.assign({}, ...ps);
 
 // ------------------------------------------------------------------ the character
 export const Person: React.FC<{
-  look: LookP; pose?: Pose; pos?: number[]; rotY?: number; ol?: boolean; propR?: React.ReactNode; propL?: React.ReactNode; above?: React.ReactNode; shadow?: boolean; blob?: boolean;
-}> = ({ look, pose = {}, pos = [0, 0, 0], rotY = 0, ol = true, propR, propL, above, shadow = true, blob = true }) => {
+  look: LookP; pose?: Pose; pos?: number[]; rotY?: number; ol?: boolean; olWidth?: number; propR?: React.ReactNode; propL?: React.ReactNode; above?: React.ReactNode; shadow?: boolean; blob?: boolean;
+}> = ({ look, pose = {}, pos = [0, 0, 0], rotY = 0, ol = true, olWidth = OL, propR, propL, above, shadow = true, blob = true }) => {
   const sc = (look.scale ?? 1) * (look.kid ? 0.66 : 1);
-  const o = ol ? OL / sc : 0;
+  const o = ol ? olWidth / sc : 0;
   const skin = mat(look.skin, { r: 0.65 });
   const shirt = mat(look.coat === 'lab' ? '#f4f6f7' : look.shirt, { r: 0.85 });
   const pants = mat(look.pants, { r: 0.85 });
@@ -207,7 +207,7 @@ export const Person: React.FC<{
                   <mesh geometry={sph(0.032, 12, 10)} material={black} position={[e[0], e[1], 0.036]} scale={[1, 1, 0.6]} />
                   <mesh geometry={sph(0.01, 6, 6)} material={basic('#ffffff')} position={[e[0] + 0.01, e[1] + 0.012, 0.052]} />
                 </group>
-                <mesh geometry={box(0.08, 0.016, 0.02)} material={black} position={[0, 0.082 + bRaise, 0.03]} rotation={[0, 0, sd * ba]} />
+                <mesh geometry={box(0.08, 0.016, 0.02)} material={mat('#2a1d18', { r: 0.95 })} position={[0, 0.082 + bRaise, 0.03]} rotation={[0, 0, sd * ba]} />
               </group>
             ))}
             {look.glasses && (
