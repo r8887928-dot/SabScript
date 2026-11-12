@@ -15,9 +15,11 @@ import sfx as S
 import music as MU
 
 ROOT = os.path.dirname(os.path.dirname(HERE))
-OUT = os.path.join(ROOT, 'out/audio')
+TLP = sys.argv[1] if len(sys.argv) > 1 else 'src/timeline.json'
+OUT = os.path.join(ROOT, sys.argv[2] if len(sys.argv) > 2 else 'out/audio')
 os.makedirs(OUT, exist_ok=True)
-tl = json.load(open(os.path.join(ROOT, 'src/timeline.json')))
+tl = json.load(open(os.path.join(ROOT, TLP)))
+GAME = tl.get('kind') == 'game'
 FPS = tl['fps']
 N = int(round(tl['frames'] / FPS * SR))
 seed_of = lambda s: zlib.crc32(s.encode()) % 100000
@@ -36,14 +38,20 @@ def place(buf, st, t, gain=1.0):
 
 
 # ------------------------------------------------------------------ voice
-raw = subprocess.run(['ffmpeg', '-loglevel', 'error', '-i', os.path.join(ROOT, 'assets/voice/voice.mp3'), '-f', 'f32le', '-ac', '1', '-ar', str(SR), '-'], capture_output=True, check=True).stdout
+raw = subprocess.run(['ffmpeg', '-loglevel', 'error', '-i', os.path.join(ROOT, tl.get('voice', 'assets/voice/voice.mp3')), '-f', 'f32le', '-ac', '1', '-ar', str(SR), '-'], capture_output=True, check=True).stdout
 v = np.frombuffer(raw, dtype=np.float32).astype(np.float64)
 voice = np.zeros((2, N))
 for b in tl['blocks']:
     seg = v[int(b['vin'] * SR):int(b['vout'] * SR)].copy()
     seg = fade(seg, 0.004, 0.006)
     place(voice, np.stack([seg, seg]), b['g'])
-print('voice placed', len(tl['blocks']), 'blocks')
+# level-match the voice: active speech RMS -> -18.7 dBFS (the reference level the mix is balanced for)
+_w = SR // 2
+_r = np.array([np.sqrt(np.mean(voice[0, i * _w:(i + 1) * _w] ** 2) + 1e-12) for i in range(N // _w)])
+_act = 20 * np.log10(_r) > -40
+_vg = db(-18.7) / np.median(_r[_act])
+voice *= _vg
+print('voice placed', len(tl['blocks']), 'blocks; voice gain %.1f dB' % (20 * np.log10(_vg)))
 
 # voice envelope for ducking
 env = np.abs(voice[0])
@@ -59,7 +67,7 @@ duck = np.clip(env_s / 0.035, 0, 1)
 music = np.zeros((2, N))
 keys = iter(['A', 'C', 'D', 'E', 'F', 'G'])
 cues = tl['music']
-tape_t = tl['cues']['tape_stop']['t']
+tape_t = tl['cues']['tape_stop']['t'] if 'tape_stop' in tl['cues'] else -1
 for i, c in enumerate(cues):
     s, e, mood = c['s'], c['e'], c['mood']
     d = e - s + 0.6
@@ -111,7 +119,7 @@ print('sfx placed', len(tl['cues']))
 fx *= db(-8)
 
 # ------------------------------------------------------------------ ambience beds
-BED = {
+BED_IQ = {
     'city': ['h1_face', 'h2_crowd', 'm1_sunrise', 'm3_commute', 'm4_school', 'm5_cross', 't1_freeze', 'a1_pole', 'a2_absurd', 'a3_door', 'a6_reverse', 'a7_inter', 'a8_crowdq', 'g3_rewind'],
     'room': ['m2_alarm', 'a4_glass', 'a5_shop', 'b3_checkout', 'b4_class', 'b5_board', 'c1_control', 'd1_servers', 'd4_chair', 'c3_airport'],
     'chaos': ['b1_chaos', 'b2_jam', 'c2_blackout', 'c4_hospital', 'c5_shutters', 'c6_sofa', 'd2_phone', 'I2', 'I3'],
@@ -119,6 +127,14 @@ BED = {
     'space': ['h3_earth', 'title', 'f2_earthnight', 'g4_earth', 'outro'],
     'studio': ['t2_heads', 't3_face', 'b6_peg', 'd3_feed', 'd5_choice', 'e3_pillars', 'g1_dark', 'I1', 'I4'],
 }
+BED_GAME = {
+    'city': ['gh2_world', 'gb1_loops', 'gb2_cars', 'gb3_lod', 'gc1_quests', 'gc2_bread', 'gd1_lag', 'gd2_freeze', 'gd3_fall', 'ge1_save', 'ge3_bus', 'ge4_best', 'gg3_button', 'gg4_press'],
+    'room': ['gh1_wake', 'gm1_bed', 'gm2_hpbar', 'gm3_level', 'ga1_fridge', 'ga2_mom', 'ga3_npc', 'gb4_teeth', 'gc3_boss', 'ge2_mug'],
+    'wind': ['gc4_wall', 'gf1_menu', 'gf2_confirm'],
+    'space': ['title', 'loading', 'gg2_sim', 'outro'],
+    'studio': ['gg1_lab', 'I1', 'I2', 'I3', 'I4', 'I5', 'I6'],
+}
+BED = BED_GAME if GAME else BED_IQ
 LV = {'city': -21, 'room': -30, 'chaos': -21, 'wind': -22, 'space': -26, 'studio': -32}
 
 

@@ -716,3 +716,182 @@ def shockwave(seed=66):
 
 
 GEN = {k: v for k, v in globals().items() if callable(v) and not k.startswith('_')}
+
+
+# ================================================================== 8-bit / game sounds
+def _pulse(freq, d, duty=0.25):
+    return osc(freq, d, 'square', duty) if np.isscalar(freq) else osc(freq, kind='square', duty=duty)
+
+
+def _crush(x, levels=8):
+    return np.round(x * levels) / levels
+
+
+def _notes(seq, step, duty=0.25, decay=0.6, gain=1.0):
+    out = []
+    for m in seq:
+        n = int(step * SR)
+        if m is None:
+            out.append(np.zeros(n))
+            continue
+        y = _pulse(mtof(m), step, duty) * np.exp(-np.arange(n) / SR / (step * decay))
+        out.append(fade(y, 0.002, 0.004) * gain)
+    return np.concatenate(out)
+
+
+def chip_powerup(seed=1):
+    y = _notes([n2m(x) for x in ['C5', 'E5', 'G5', 'C6', 'E6', 'G6', 'C7']], 0.045, 0.25, 1.5)
+    return reverb(to_stereo(_crush(norm(y) * 0.9), 0, 0.2), rt=0.6, mix=0.12)
+
+
+def chip_loading(seed=2, d=3.2):
+    seq = []
+    for i in range(int(d / 0.1)):
+        seq.append(n2m('C6') + (i % 4) * 2 if i % 2 == 0 else None)
+    y = _notes(seq, 0.1, 0.125, 0.4, 0.5)
+    return to_stereo(y, 0.2, 0.2)
+
+
+def chip_ready(seed=3):
+    y = _notes([n2m(x) for x in ['G5', 'C6', 'E6', 'G6']], 0.07, 0.5, 1.2) 
+    y = np.concatenate([y, _notes([n2m('C7')], 0.4, 0.25, 0.8)])
+    return reverb(to_stereo(_crush(norm(y) * 0.9), 0, 0.2), rt=0.8, mix=0.15)
+
+
+def chip_blip(seed=4):
+    n = int(0.08 * SR)
+    f = np.linspace(900, 1800, n)
+    y = osc(f, kind='square', duty=0.5) * np.exp(-np.arange(n) / SR / 0.03)
+    return to_stereo(_crush(y * 0.8), 0, 0.1)
+
+
+def chip_select(seed=5):
+    y = _notes([n2m('E6'), n2m('B6')], 0.06, 0.5, 1.0)
+    return to_stereo(_crush(norm(y) * 0.8), 0, 0.1)
+
+
+def chip_levelup(seed=6):
+    a = _notes([n2m(x) for x in ['C5', 'G5', 'C6', 'E6', 'G6']], 0.06, 0.5, 1.0)
+    b = _notes([n2m('C7'), None, n2m('C7')], 0.12, 0.25, 0.9)
+    y = np.concatenate([a, b])
+    tri = osc(np.full(len(y), mtof(n2m('C4'))), kind='tri') * np.exp(-np.arange(len(y)) / SR / 0.5) * 0.4
+    return reverb(to_stereo(_crush(norm(y + tri) * 0.9), 0, 0.3), rt=1.0, mix=0.18)
+
+
+def chip_coin(seed=7):
+    y = np.concatenate([_notes([n2m('B5')], 0.07, 0.5, 2.0), _notes([n2m('E6')], 0.35, 0.5, 0.5)])
+    return reverb(to_stereo(_crush(norm(y) * 0.85), 0, 0.1), rt=0.6, mix=0.12)
+
+
+def chip_coins(seed=8):
+    out = np.zeros((2, int(1.4 * SR)))
+    r = rng(seed)
+    for i in range(9):
+        c = chip_coin(seed + i) * r.uniform(0.4, 0.9)
+        t0 = int(i * 0.09 * SR)
+        out[:, t0:t0 + c.shape[1]] += c[:, : max(0, out.shape[1] - t0)][:, :c.shape[1]]
+    return out
+
+
+def chip_talk(seed=9, d=1.0):
+    """NPC dialogue blips (like text appearing)"""
+    r = rng(seed)
+    y = np.zeros(int(d * SR))
+    t = 0.0
+    while t < d - 0.06:
+        n = int(0.045 * SR)
+        f = r.choice([620, 700, 780, 660, 740])
+        b = osc(f, 0.045, 'square', 0.5) * np.exp(-np.arange(n) / SR / 0.02)
+        i = int(t * SR)
+        y[i:i + n] += b
+        t += 0.06
+    return to_stereo(_crush(y * 0.6), -0.2, 0.1)
+
+
+def chip_quest(seed=10):
+    y = _notes([n2m(x) if x else None for x in ['G4', 'C5', 'E5', 'G5', None, 'E5', 'G5']], 0.1, 0.5, 1.1)
+    y = np.concatenate([y, _notes([n2m('C6')], 0.5, 0.25, 0.9)])
+    bass = _notes([n2m('C3')], len(y) / SR, 0.5, 0.6) * 0.0
+    tri = osc(np.full(len(y), mtof(n2m('C3'))), kind='tri') * adsr(len(y), 0.01, 0.1, 0.7, 0.2) * 0.35
+    return reverb(to_stereo(_crush(norm(y + tri) * 0.9), 0, 0.3), rt=1.2, mix=0.2)
+
+
+def chip_boss(seed=11):
+    d = 1.6
+    n = int(d * SR)
+    t = np.arange(n) / SR
+    f = 110 * (1 - 0.35 * t / d) * (1 + 0.04 * np.sin(2 * np.pi * 9 * t))
+    y = _pulse(f, d, 0.125) * 0.6 + _crush(rng(seed).standard_normal(n), 4) * 0.25
+    y = lp(y, 2200) * adsr(n, 0.02, 0.2, 0.8, 0.5)
+    hit = impact_big(seed)[0][: n] * 0.6
+    return reverb(to_stereo(norm(softclip(y + np.pad(hit, (0, n - len(hit))), 1.5)), 0, 0.4), rt=1.6, mix=0.25)
+
+
+def chip_wall(seed=12):
+    d = 0.9
+    n = int(d * SR)
+    t = np.arange(n) / SR
+    zap = osc(np.linspace(1800, 300, n), kind='square', duty=0.5) * np.exp(-t / 0.18) * (0.5 + 0.5 * np.sign(np.sin(2 * np.pi * 60 * t)))
+    thud = osc(70 * (1 + np.exp(-t / 0.02)), kind='sine') * np.exp(-t / 0.2)
+    crash = crash_small(seed)[0][:n] * 0.5
+    y = norm(_crush(zap, 6)) * 0.5 + norm(thud) * 0.9 + np.pad(crash, (0, n - len(crash)))
+    return reverb(to_stereo(norm(y), 0, 0.4), rt=1.0, mix=0.2)
+
+
+def chip_lag(seed=13, d=1.8):
+    r = rng(seed)
+    n = int(d * SR)
+    y = np.zeros(n)
+    i = 0
+    while i < n:
+        ln = int(r.uniform(0.03, 0.12) * SR)
+        if r.uniform() < 0.6:
+            seg = _crush(np.sin(2 * np.pi * r.uniform(200, 900) * np.arange(ln) / SR), 3)
+        else:
+            seg = np.zeros(ln)
+        y[i:i + ln] = seg[: max(0, min(ln, n - i))] * 0.6
+        i += ln
+    return to_stereo(y, 0, 0.3)
+
+
+def tape_freeze(seed=14):
+    d = 0.8
+    n = int(d * SR)
+    k = np.linspace(0, 1, n)
+    y = osc(np.maximum(30, 900 * (1 - k) ** 2), kind='saw') * (1 - k)
+    return reverb(to_stereo(lp(y, 3000) * 0.8, 0, 0.3), rt=1.2, mix=0.25)
+
+
+def chip_fall(seed=15):
+    d = 1.6
+    n = int(d * SR)
+    k = np.linspace(0, 1, n)
+    y = _pulse(1400 * (80 / 1400) ** k, d, 0.25) * (1 - k * 0.6)
+    wh = whoosh(1.4, 1500, 300, 120, seed)
+    st = to_stereo(_crush(y, 6) * 0.6, 0, 0.2)
+    st[:, :wh.shape[1]] += wh[:, :n] * 0.6
+    return reverb(st, rt=1.4, mix=0.2)
+
+
+def chip_save(seed=16):
+    y = _notes([n2m(x) for x in ['E6', 'G6', 'E7']], 0.08, 0.5, 1.0)
+    y = np.concatenate([y, np.zeros(int(0.2 * SR)), _notes([n2m('C7'), n2m('G7')], 0.12, 0.25, 1.0)])
+    return reverb(to_stereo(_crush(norm(y) * 0.85), 0, 0.2), rt=1.0, mix=0.18)
+
+
+def chip_achievement(seed=17):
+    a = _notes([n2m(x) for x in ['C6', 'E6', 'G6', 'C7']], 0.07, 0.5, 1.2)
+    chord = sum(osc(mtof(n2m(m)), 0.9, 'square', 0.25) for m in ['C6', 'E6', 'G6']) * np.exp(-np.arange(int(0.9 * SR)) / SR / 0.35) / 3
+    y = np.concatenate([a, chord])
+    return reverb(to_stereo(_crush(norm(y) * 0.9), 0, 0.4), rt=1.6, mix=0.25)
+
+
+def chip_warning(seed=18):
+    out = []
+    for k in range(2):
+        out += [_notes([n2m('A4')], 0.16, 0.5, 2.0), _notes([n2m('D#4')], 0.22, 0.5, 2.0), np.zeros(int(0.08 * SR))]
+    y = np.concatenate(out)
+    return reverb(to_stereo(_crush(norm(y) * 0.85), 0, 0.2), rt=1.0, mix=0.2)
+
+
+GEN = {k: v for k, v in globals().items() if callable(v) and not k.startswith('_')}

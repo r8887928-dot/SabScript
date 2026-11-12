@@ -70,14 +70,14 @@ export const A2Absurd: React.FC = () => {
 };
 
 /** shop front with a glass door and a «НА СЕБЯ» sign; door hinge on the left */
-const ShopFront: React.FC<{ rattle: number }> = ({ rattle }) => {
+export const ShopFront: React.FC<{ rattle: number; sign?: string; signColor?: string }> = ({ rattle, sign = 'ПРОДУКТЫ', signColor = '#2e9e5b' }) => {
   const glass = useMemo(() => new THREE.MeshStandardMaterial({ color: '#bfe3ff', transparent: true, opacity: 0.32, roughness: 0.05, metalness: 0.1 }), []);
   return (
     <group>
       <mesh position={[-3.375, 2.5, -0.25]} material={mat('#e9dcc4', { r: 0.85 })} receiveShadow castShadow><boxGeometry args={[5.25, 5, 0.5]} /></mesh>
       <mesh position={[3.375, 2.5, -0.25]} material={mat('#e9dcc4', { r: 0.85 })} receiveShadow castShadow><boxGeometry args={[5.25, 5, 0.5]} /></mesh>
       <mesh position={[0, 3.85, -0.25]} material={mat('#e9dcc4', { r: 0.85 })} receiveShadow castShadow><boxGeometry args={[1.5, 2.3, 0.5]} /></mesh>
-      <mesh position={[0, 4.15, 0.06]} material={basic('#ffffff', { map: textTex('ПРОДУКТЫ', { w: 1024, h: 200, bg: '#2e9e5b', fg: '#fff', radius: 24 }) })}><planeGeometry args={[5, 0.98]} /></mesh>
+      <mesh position={[0, 4.15, 0.06]} material={basic('#ffffff', { map: textTex(sign, { w: 1024, h: 200, bg: signColor, fg: '#fff', radius: 24 }) })}><planeGeometry args={[5, 0.98]} /></mesh>
       {[-3.6, 3.6].map((x) => <mesh key={x} position={[x, 1.6, 0.02]} material={glass}><planeGeometry args={[2.6, 2.4]} /></mesh>)}
       {[-0.72, 0.72].map((x) => <mesh key={x} position={[x, 1.35, 0.0]} material={mat('#3a3a3a', { r: 0.4, m: 0.5 })}><boxGeometry args={[0.08, 2.7, 0.55]} /></mesh>)}
       <group position={[-0.65, 0, 0.06]} rotation={[0, rattle, 0]}>

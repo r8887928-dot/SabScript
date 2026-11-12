@@ -373,3 +373,147 @@ def m_finale(d, seed=12):
 MOODS = {'hook': m_hook, 'morning': m_morning, 'twist': m_twist, 'interlude': m_interlude, 'comedy': m_comedy, 'tension': m_tension,
          'heavy': m_heavy, 'glitchy': m_glitchy, 'sad': m_sad, 'eerie': m_eerie, 'dark': m_dark, 'finale': m_finale}
 LEVEL = {'hook': 0.8, 'morning': 0.75, 'twist': 0.8, 'interlude': 0.8, 'comedy': 0.75, 'tension': 0.8, 'heavy': 0.65, 'glitchy': 0.5, 'sad': 0.8, 'eerie': 0.85, 'dark': 0.8, 'finale': 0.8}
+
+
+# ================================================================== chiptune moods (game video)
+def _pls(m, d, duty=0.25, att=0.003, decay=None):
+    n = int(d * SR)
+    y = osc(mtof(m), d, 'square', duty)
+    env = adsr(n, att, 0.04, 0.7, 0.02) if decay is None else np.exp(-np.arange(n) / SR / decay)
+    return np.round(y * env * 8) / 8
+
+
+def _tri(m, d):
+    n = int(d * SR)
+    return np.round(osc(mtof(m), d, 'tri') * adsr(n, 0.003, 0.02, 0.9, 0.02) * 8) / 8
+
+
+def _nz(d=0.06, seed=0, hi=True):
+    n = int(d * SR)
+    x = np.round(rng(seed).uniform(-1, 1, n) * 4) / 4
+    x = np.repeat(x[::4], 4)[:n] if not hi else x
+    return x * np.exp(-np.arange(n) / SR / (d * 0.35))
+
+
+def _chip_song(d, bpm, prog, lead, bass_pat, arp=True, drums='rock', duty=0.25, lead_oct=0, key_shift=0, lag=False, seed=0):
+    T = Track(d)
+    b = 60 / bpm
+    bar = 4 * b
+    nbar = int(np.ceil(d / bar))
+    for k in range(nbar):
+        ch = [n2m(x) + key_shift for x in prog[k % len(prog)]]
+        t0 = k * bar
+        for j, step in enumerate(bass_pat):
+            if step is None:
+                continue
+            T.add(_tri(ch[0] - 12 + step, b / 2 * 0.9), t0 + j * b / 2, 0.55)
+        if arp:
+            for j in range(16):
+                m = ch[j % 3] + 12 * (1 + (j // 3) % 2)
+                T.add(_pls(m, b / 4 * 0.9, 0.125, decay=0.05), t0 + j * b / 4, 0.12, 0.35)
+        for j in range(8):
+            ln = lead[(k * 8 + j) % len(lead)]
+            if ln is not None:
+                T.add(_pls(ln + key_shift + 12 * lead_oct, b / 2 * 0.92, duty, decay=0.35), t0 + j * b / 2, 0.24, -0.15)
+        for j in range(4):
+            tb = t0 + j * b
+            if drums == 'rock':
+                if j % 2 == 0:
+                    T.add(kick(0.25, 140, 50), tb, 0.45)
+                else:
+                    T.add(_nz(0.12, j + k, True) * 0.7, tb, 0.35)
+                T.add(_nz(0.03, j * 3 + k, True) * 0.5, tb + b / 2, 0.25)
+            elif drums == 'light':
+                if j == 0:
+                    T.add(kick(0.2, 120, 50), tb, 0.3)
+                T.add(_nz(0.025, j + k, True) * 0.5, tb + b / 2, 0.18)
+            elif drums == 'march':
+                T.add(kick(0.25, 140, 50), tb, 0.45)
+                T.add(_nz(0.1, j + k, True) * 0.6, tb + b / 2, 0.3)
+                T.add(_nz(0.03, j + k + 7, True) * 0.5, tb + b * 0.75, 0.2)
+    y = T.out(0.9, 0.12)
+    if lag:  # stutter: repeat little chunks and freeze
+        r = rng(seed + 5)
+        n = y.shape[1]
+        i = int(0.4 * SR)
+        while i < n - SR:
+            ln = int(r.uniform(0.08, 0.25) * SR)
+            if r.uniform() < 0.5:
+                rep = int(r.integers(2, 5))
+                chunk = y[:, i:i + ln].copy()
+                for q in range(rep):
+                    s0 = i + q * ln
+                    if s0 + ln < n:
+                        y[:, s0:s0 + ln] = chunk
+                i += ln * rep
+            elif r.uniform() < 0.3:
+                y[:, i:i + ln] *= 0.0
+                i += ln
+            else:
+                i += int(r.uniform(0.3, 0.8) * SR)
+    return y
+
+
+def m_chip_hook(d, seed=20):
+    prog = [['A3', 'C4', 'E4'], ['F3', 'A3', 'C4'], ['G3', 'B3', 'D4'], ['E3', 'G#3', 'B3']]
+    lead = [None] * 8 + [n2m(x) for x in ['A5', 'E5', 'C5', 'E5', 'A5', 'B5', 'C6', 'B5']]
+    y = _chip_song(d, 120, prog, lead, [0, None, 12, None, 0, None, 12, 7], arp=True, drums='light')
+    k = np.linspace(0, 1, y.shape[1])
+    return y * (0.55 + 0.45 * k)
+
+
+def m_chip_morning(d, seed=21):
+    prog = [['C4', 'E4', 'G4'], ['G3', 'B3', 'D4'], ['A3', 'C4', 'E4'], ['F3', 'A3', 'C4']]
+    lead = [n2m(x) if x else None for x in ['E5', 'G5', 'C6', 'G5', 'E5', None, 'D5', 'E5', 'D5', 'G5', 'B5', 'G5', 'D5', None, 'C5', 'D5',
+                                             'C5', 'E5', 'A5', 'E5', 'C5', None, 'B4', 'C5', 'A4', 'C5', 'F5', 'C5', 'A4', 'G4', 'A4', 'C5']]
+    return _chip_song(d, 132, prog, lead, [0, None, 7, None, 12, None, 7, None], drums='light', duty=0.5)
+
+
+def m_chip_quirky(d, seed=22):
+    prog = [['D4', 'F4', 'A4'], ['A3', 'C#4', 'E4'], ['D4', 'F4', 'A4'], ['Bb3', 'D4', 'F4']]
+    lead = [n2m(x) if x else None for x in ['D5', None, 'F5', 'E5', None, 'D5', 'C#5', None, 'D5', 'A4', None, 'Bb4', 'A4', None, 'G#4', 'A4']]
+    return _chip_song(d, 140, prog, lead, [0, 7, None, 7, 0, 7, None, 12], arp=False, drums='light', duty=0.125)
+
+
+def m_chip_quirky2(d, seed=23):
+    prog = [['G3', 'Bb3', 'D4'], ['C4', 'Eb4', 'G4'], ['G3', 'Bb3', 'D4'], ['D4', 'F#4', 'A4']]
+    lead = [n2m(x) if x else None for x in ['G5', 'F5', 'D5', None, 'G5', 'A5', 'Bb5', None, 'A5', 'G5', 'F#5', 'D5', 'G5', None, 'D5', None]]
+    return _chip_song(d, 148, prog, lead, [0, 12, 0, 12, 0, 12, 7, 12], arp=True, drums='rock', duty=0.25)
+
+
+def m_chip_quest(d, seed=24):
+    prog = [['E4', 'G4', 'B4'], ['C4', 'E4', 'G4'], ['G3', 'B3', 'D4'], ['D4', 'F#4', 'A4']]
+    lead = [n2m(x) if x else None for x in ['E5', None, 'B5', 'A5', 'G5', 'F#5', 'G5', 'A5', 'E5', None, 'G5', 'E5', 'D5', None, 'F#5', None]]
+    return _chip_song(d, 152, prog, lead, [0, 0, 12, 0, 0, 0, 12, 7], arp=True, drums='march', duty=0.5)
+
+
+def m_chip_lag(d, seed=25):
+    prog = [['A3', 'C4', 'E4'], ['A3', 'C4', 'E4'], ['F3', 'A3', 'C4'], ['G3', 'B3', 'D4']]
+    lead = [n2m(x) if x else None for x in ['A5', 'C6', 'E6', 'C6', 'A5', None, 'G5', 'A5']]
+    return _chip_song(d, 112, prog, lead, [0, None, 7, None, 0, None, 7, None], drums='light', lag=True, seed=seed)
+
+
+def m_chip_happy(d, seed=26):
+    prog = [['F4', 'A4', 'C5'], ['C4', 'E4', 'G4'], ['D4', 'F4', 'A4'], ['Bb3', 'D4', 'F4']]
+    lead = [n2m(x) if x else None for x in ['A5', 'C6', 'F6', 'C6', 'A5', 'G5', 'A5', 'C6', 'G5', 'C6', 'E6', 'C6', 'G5', 'F5', 'E5', 'G5']]
+    return _chip_song(d, 140, prog, lead, [0, None, 7, 12, 0, None, 7, 12], drums='rock', duty=0.5)
+
+
+def m_chip_menu(d, seed=27):
+    T = Track(d)
+    b = 60 / 84
+    seq = ['A4', 'C5', 'E5', 'G5', 'E5', 'C5']
+    i = 0
+    t = 0.0
+    while t < d:
+        T.add(_tri(n2m(seq[i % len(seq)]) - 12, b * 0.95) * 0.7, t, 0.35)
+        T.add(_pls(n2m(seq[i % len(seq)]) + 12, b * 0.5, 0.125, decay=0.25), t, 0.06, 0.4)
+        t += b / 2
+        i += 1
+    T.add(pad([n2m('A3'), n2m('E4'), n2m('G4')], d, bright=900, att=1.0, rel=0.8), 0, 0.18)
+    return T.out(2.4, 0.3)
+
+
+MOODS.update({'chip_hook': m_chip_hook, 'chip_morning': m_chip_morning, 'chip_quirky': m_chip_quirky, 'chip_quirky2': m_chip_quirky2, 'chip_quest': m_chip_quest,
+              'chip_lag': m_chip_lag, 'chip_happy': m_chip_happy, 'chip_menu': m_chip_menu})
+LEVEL.update({'chip_hook': 0.6, 'chip_morning': 0.52, 'chip_quirky': 0.55, 'chip_quirky2': 0.5, 'chip_quest': 0.52, 'chip_lag': 0.55, 'chip_happy': 0.5, 'chip_menu': 0.7})

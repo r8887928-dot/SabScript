@@ -143,16 +143,17 @@ class GB {
 }
 
 // ------------------------------------------------------------------ building material with "lights" control
-export type CityUniforms = { uLit: { value: number }; uWave: { value: THREE.Vector3 }; uNight: { value: number } };
+export type CityUniforms = { uLit: { value: number }; uWave: { value: THREE.Vector3 }; uNight: { value: number }; uLoad: { value: THREE.Vector3 } };
 function facadeMat(si: number, shops: boolean, U: CityUniforms) {
   const st = STYLES[si];
   const opts: any = { map: shops ? paintShops(si, false) : paintFacade(si, false), emissive: new THREE.Color('#ffffff'), emissiveMap: shops ? paintShops(si, true) : paintFacade(si, true), emissiveIntensity: 1 };
   const m: THREE.Material = st.kind === 'glass' && !shops ? new THREE.MeshStandardMaterial({ ...opts, roughness: 0.25, metalness: 0.35 }) : new THREE.MeshLambertMaterial(opts);
   m.onBeforeCompile = (sh) => {
-    sh.uniforms.uLit = U.uLit; sh.uniforms.uWave = U.uWave; sh.uniforms.uNight = U.uNight;
+    sh.uniforms.uLit = U.uLit; sh.uniforms.uWave = U.uWave; sh.uniforms.uNight = U.uNight; sh.uniforms.uLoad = U.uLoad;
     sh.vertexShader = 'attribute vec3 aB; varying vec3 vB;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vB = aB;');
-    sh.fragmentShader = 'uniform float uLit; uniform vec3 uWave; uniform float uNight; varying vec3 vB;\n' + sh.fragmentShader.replace('#include <emissivemap_fragment>',
-      '#include <emissivemap_fragment>\n float on = step(vB.z, uLit) * smoothstep(uWave.z - 4.0, uWave.z + 4.0, length(vB.xy - uWave.xy));\n totalEmissiveRadiance *= on * uNight;');
+    sh.fragmentShader = 'uniform float uLit; uniform vec3 uWave; uniform float uNight; uniform vec3 uLoad; varying vec3 vB;\n' + sh.fragmentShader.replace('#include <map_fragment>',
+      '#include <map_fragment>\n float ld = 1.0 - smoothstep(uLoad.z - 3.0, uLoad.z + 3.0, length(vB.xy - uLoad.xy));\n diffuseColor.rgb = mix(vec3(0.6, 0.6, 0.62), diffuseColor.rgb, ld);').replace('#include <emissivemap_fragment>',
+      '#include <emissivemap_fragment>\n float on = step(vB.z, uLit) * smoothstep(uWave.z - 4.0, uWave.z + 4.0, length(vB.xy - uWave.xy));\n totalEmissiveRadiance *= on * uNight * (1.0 - smoothstep(uLoad.z - 3.0, uLoad.z + 3.0, length(vB.xy - uLoad.xy)));');
   };
   m.customProgramCacheKey = () => 'facade' + m.type;
   return m;
@@ -167,7 +168,7 @@ function buildCity(seed: number, near: number, far: number, clear: number[][] = 
   const key = `${seed}_${near}_${far}_${JSON.stringify(clear)}`;
   if (cache.has(key)) return cache.get(key)!;
   const r = rng(seed);
-  const U: CityUniforms = { uLit: { value: 1 }, uWave: { value: new THREE.Vector3(0, 0, -1) }, uNight: { value: 0 } };
+  const U: CityUniforms = { uLit: { value: 1 }, uWave: { value: new THREE.Vector3(0, 0, -1) }, uNight: { value: 0 }, uLoad: { value: new THREE.Vector3(0, 0, 1e5) } };
   const body = STYLES.map(() => new GB());
   const shops = STYLES.map(() => new GB());
   const roofs = new GB(), walks = new GB(), curbs = new GB(), marks = new GB(), rooftop = new GB();
@@ -336,12 +337,12 @@ export const TrafficLight: React.FC<{ pos: number[]; rotY: number; state: 'red' 
 // ------------------------------------------------------------------ the city component
 export type CityProps = {
   seed?: number; near?: number; far?: number; night?: number; lit?: number; wave?: number[]; overgrowth?: number; trash?: number;
-  lamps?: number; traffic?: 'normal' | 'blink' | 'off' | 'chaos'; f?: number; noPlaza?: boolean; clear?: number[][]; noGround?: boolean;
+  lamps?: number; traffic?: 'normal' | 'blink' | 'off' | 'chaos'; f?: number; noPlaza?: boolean; clear?: number[][]; noGround?: boolean; load?: number[];
 };
-export const City: React.FC<CityProps> = ({ seed = 7, near = 3, far = 7, night = 0, lit = 1, wave = [0, 0, -1], overgrowth = 0, trash = 0, lamps = 0, traffic = 'normal', f = 0, clear = [], noGround = false }) => {
+export const City: React.FC<CityProps> = ({ seed = 7, near = 3, far = 7, night = 0, lit = 1, wave = [0, 0, -1], overgrowth = 0, trash = 0, lamps = 0, traffic = 'normal', f = 0, clear = [], noGround = false, load = [0, 0, 1e5] }) => {
   const ck = JSON.stringify(clear);
   const B = useMemo(() => buildCity(seed, near, far, clear), [seed, near, far, ck]);
-  B.U.uNight.value = night; B.U.uLit.value = lit; B.U.uWave.value.set(wave[0], wave[1], wave[2]);
+  B.U.uNight.value = night; B.U.uLit.value = lit; B.U.uWave.value.set(wave[0], wave[1], wave[2]); B.U.uLoad.value.set(load[0], load[1], load[2]);
   const vines = useMemo(() => scatter(seed + 1, B.lots, 2600, 'vine', near), [B]);
   const grass = useMemo(() => scatter(seed + 2, B.lots, 900, 'grass', near), [B]);
   const trashP = useMemo(() => scatter(seed + 3, B.lots, 260, 'trash', near), [B]);

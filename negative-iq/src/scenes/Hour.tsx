@@ -118,7 +118,7 @@ export const B3Checkout: React.FC = () => {
 };
 
 /** classroom set: board on the back wall, desks with kids */
-const Classroom: React.FC<{ f: number; boardTex?: THREE.Texture; qFrom?: number }> = ({ f, boardTex, qFrom = 1e9 }) => {
+export const Classroom: React.FC<{ f: number; boardTex?: THREE.Texture; qFrom?: number }> = ({ f, boardTex, qFrom = 1e9 }) => {
   const boardMat = useMemo(() => (boardTex ? new THREE.MeshBasicMaterial({ map: boardTex, toneMapped: false }) : mat('#2f4f3a', { r: 0.9 })), [boardTex]);
   const kids = useMemo(() => Array.from({ length: 9 }).map((_, i) => ({ look: randomLook(320 + i, { kid: true }), x: -2.4 + (i % 3) * 2.4, z: -0.5 + Math.floor(i / 3) * 1.8 })), []);
   return (

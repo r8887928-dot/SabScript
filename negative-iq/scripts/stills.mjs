@@ -4,7 +4,8 @@ import { bundle } from '@remotion/bundler';
 import { renderStill, selectComposition, openBrowser } from '@remotion/renderer';
 import fs from 'fs';
 import path from 'path';
-const tl = JSON.parse(fs.readFileSync('src/timeline.json', 'utf8'));
+const tl = JSON.parse(fs.readFileSync(process.env.TL || 'src/timeline.json', 'utf8'));
+const COMP = process.env.COMP || 'NegativeIQ';
 const arg = process.argv[2];
 const out = process.argv[3] || 'out/stills';
 const scale = Number(process.argv[4] || 0.5);
@@ -19,7 +20,7 @@ const browserExecutable = '/opt/pw-browsers/chromium_headless_shell-1243/chrome-
 const chromiumOptions = { gl: 'swangle' };
 const serveUrl = await bundle({ entryPoint: path.resolve('src/index.ts'), webpackOverride: (c) => c });
 const browser = await openBrowser('chrome', { browserExecutable, chromiumOptions });
-const composition = await selectComposition({ serveUrl, id: 'NegativeIQ', puppeteerInstance: browser, browserExecutable, chromiumOptions });
+const composition = await selectComposition({ serveUrl, id: COMP, puppeteerInstance: browser, browserExecutable, chromiumOptions });
 for (const f of frames) {
   const t0 = Date.now();
   await renderStill({ composition, serveUrl, frame: f, output: `${out}/f${String(f).padStart(5, '0')}.png`, scale, puppeteerInstance: browser, browserExecutable, chromiumOptions, imageFormat: 'png', timeoutInMilliseconds: 180000, onBrowserLog: (l) => { if (l.text.includes('TIMING') || ((l.type === 'error' || l.type === 'warning') && !l.text.includes('map') && !l.text.includes('fallback'))) console.log('BROWSER', l.type, l.text.slice(0, 300)); } });

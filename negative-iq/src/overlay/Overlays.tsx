@@ -8,7 +8,7 @@ const TECH = '"Russo One", Montserrat, sans-serif';
 const stroke = (px: number, color = '#000') => ({ WebkitTextStroke: `${px}px ${color}`, paintOrder: 'stroke fill' as const });
 
 // ------------------------------------------------------------------ subtitles
-const RED_WORDS = new Set([9, 10, 28, 29, 35, 80, 85, 118, 127, 146, 215, 221, 222]);
+const IQ_RED = [9, 10, 28, 29, 35, 80, 85, 118, 127, 146, 215, 221, 222];
 export const Subtitles: React.FC = () => {
   const f = useCurrentFrame();
   const t = f / FPS;
@@ -21,13 +21,13 @@ export const Subtitles: React.FC = () => {
   return (
     <div style={{ position: 'absolute', left: 60, right: 60, top: 1150, height: 420, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: fade, transform: `translateY(${lift}px)` }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', columnGap: 26, rowGap: 4, maxWidth: 960 }}>
-        {sub.words.map((w: any, i: number) => {
+        {sub.words.filter((w: any) => w.w && w.w !== '—').map((w: any, i: number) => {
           const ws = sf(w.s) - 1;
           const shown = f >= ws;
           const p = shown ? backOut((f - ws) / 6, 1.4) : 0;
           const active = f >= ws && f < sf(w.e) + 2;
           const key = w.k;
-          const red = key && RED_WORDS.has(w.i);
+          const red = key && (tl.red ?? IQ_RED).includes(w.i);
           const size = key ? Math.min(112, Math.floor(940 / (w.w.length * 0.78))) : Math.min(78, Math.floor(940 / (w.w.length * 0.62)));
           const color = key ? (red ? '#ff3b3b' : '#ffe14a') : active ? '#ffffff' : '#f1f1f1';
           const wig = key && shown ? Math.sin((f - ws) * 0.35) * 2.2 * Math.exp(-(f - ws) * 0.08) : 0;
@@ -48,6 +48,7 @@ export const Subtitles: React.FC = () => {
 // ------------------------------------------------------------------ hook IQ gauge
 export const HookGauge: React.FC = () => {
   const f = useCurrentFrame();
+  if (tl.kind === 'game') return null;
   const a = sf(tl.words[9].s) - 3, b = sf(tl.words[10].e) + 2, end = sf(tl.inserts.TITLE.start);
   if (f < a || f >= end) return null;
   const p = smoother((f - a) / (b - a));
@@ -84,7 +85,8 @@ export const HookGauge: React.FC = () => {
 // ------------------------------------------------------------------ title card
 export const TitleCard: React.FC = () => {
   const f = useCurrentFrame();
-  const s = sf(tl.inserts.TITLE.start), d = sf(tl.inserts.TITLE.dur);
+  const T = tl.title ?? { small: 'ЧТО, ЕСЛИ…', big: 'IQ < 0', sub: 'НАУЧНО-ФАНТАСТИЧЕСКИЙ ЭКСПЕРИМЕНТ', dur: tl.inserts.TITLE.dur };
+  const s = sf(tl.inserts.TITLE.start), d = sf(T.dur);
   const l = f - s;
   if (l < 0 || l >= d + 6) return null;
   const out = clamp((d + 6 - l) / 8);
@@ -93,13 +95,13 @@ export const TitleCard: React.FC = () => {
   return (
     <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', opacity: out }}>
       <div style={{ position: 'absolute', top: 560, width: '100%', textAlign: 'center', transform: `translateX(${g}px)` }}>
-        <div style={{ fontFamily: FONT, fontWeight: 900, fontSize: 92, color: '#fff', ...stroke(12), transform: `scale(${p1})`, letterSpacing: 4 }}>ЧТО, ЕСЛИ…</div>
+        <div style={{ fontFamily: FONT, fontWeight: 900, fontSize: 92, color: '#fff', ...stroke(12), transform: `scale(${p1})`, letterSpacing: 4 }}>{T.small}</div>
         <div style={{ position: 'relative', height: 330, marginTop: 10 }}>
           {[['#00f0ff', -8, 0.7], ['#ff2050', 8, 0.7], ['#ffffff', 0, 1]].map(([c, dx, o]: any, i) => (
-            <div key={i} style={{ position: 'absolute', left: 0, right: 0, fontFamily: TECH, fontSize: 300, color: c, opacity: o, mixBlendMode: i < 2 ? 'screen' : 'normal', transform: `translateX(${dx * (l < 14 ? 3 : 1) + (i < 2 ? Math.sin(l * 1.3 + i) * 4 : 0)}px) scale(${p2})`, ...(i === 2 ? stroke(16) : {}), textShadow: i === 2 ? '0 0 60px rgba(255,40,60,0.9)' : 'none' }}>IQ &lt; 0</div>
+            <div key={i} style={{ position: 'absolute', left: 0, right: 0, fontFamily: TECH, fontSize: T.big.length > 7 ? 190 : 300, lineHeight: 1.05, color: c, opacity: o, mixBlendMode: i < 2 ? 'screen' : 'normal', transform: `translateX(${dx * (l < 14 ? 3 : 1) + (i < 2 ? Math.sin(l * 1.3 + i) * 4 : 0)}px) scale(${p2})`, ...(i === 2 ? stroke(16) : {}), textShadow: i === 2 ? (tl.kind === 'game' ? '0 0 60px rgba(255,43,214,0.9)' : '0 0 60px rgba(255,40,60,0.9)') : 'none' }}>{T.big}</div>
           ))}
         </div>
-        <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 46, color: '#ffe14a', ...stroke(8), opacity: p3, transform: `translateY(${(1 - p3) * 30}px)`, letterSpacing: 6 }}>НАУЧНО-ФАНТАСТИЧЕСКИЙ ЭКСПЕРИМЕНТ</div>
+        <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 46, color: '#ffe14a', ...stroke(8), opacity: p3, transform: `translateY(${(1 - p3) * 30}px)`, letterSpacing: 6 }}>{T.sub}</div>
       </div>
     </AbsoluteFill>
   );
@@ -115,12 +117,13 @@ export const Interludes: React.FC = () => {
   const ch = tl.chapters.find((c: any) => f >= sf(c.ins_start) && f < sf(c.end) + 18);
   if (!ch) return null;
   const s = sf(ch.ins_start), l = f - s;
-  const cardIn = 10, cardOut = 112, clkIn = 114, titleF = sf(ch.start) - s;
+  const D = sf(ch.ins_dur);
+  const cardIn = 10, cardOut = Math.round(D * 0.535), clkIn = cardOut + 2, titleF = sf(ch.start) - s;
   const endF = sf(ch.end) + 18 - s;
   const fact = ch.fact;
   // fact card
   const cIn = backOut((l - cardIn) / 12, 1.5), cOut = clamp((cardOut - l) / 8);
-  const qIn = easeOut((l - 62) / 10);
+  const qIn = easeOut((l - Math.round(D * 0.3)) / 10);
   const showCard = l >= cardIn && l < cardOut;
   // clock
   const [t0, t1] = TARGET[ch.ins];
@@ -145,7 +148,7 @@ export const Interludes: React.FC = () => {
       )}
       {l >= clkIn && (
         <div style={{ position: 'absolute', left: 0, right: 0, top: 520, textAlign: 'center', opacity: outP, transform: `translateX(${shake}px)` }}>
-          <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 36, letterSpacing: 8, color: '#9fe8ff', ...stroke(6), opacity: clkP }}>ВРЕМЯ ПОСЛЕ СОБЫТИЯ</div>
+          <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 36, letterSpacing: 8, color: '#9fe8ff', ...stroke(6), opacity: clkP }}>{tl.clockLabel ?? 'ВРЕМЯ ПОСЛЕ СОБЫТИЯ'}</div>
           <div style={{ display: 'inline-block', marginTop: 18, padding: '18px 44px', borderRadius: 28, background: 'rgba(5,10,20,0.75)', border: `4px solid ${slam ? '#ff3b3b' : '#2ae8ff'}`, boxShadow: `0 0 50px ${slam ? 'rgba(255,40,40,0.6)' : 'rgba(40,220,255,0.45)'}`, transform: `scale(${clkP * (slam ? 1 + 0.12 * Math.exp(-(l - titleF) * 0.3) : 1)})` }}>
             <span style={{ fontFamily: TECH, fontSize: 120, color: slam ? '#ff4b4b' : '#ffffff', letterSpacing: 4 }}>{slam ? ch.clock : clockText(val)}</span>
           </div>
@@ -162,6 +165,7 @@ export const Interludes: React.FC = () => {
 export const CornerHud: React.FC = () => {
   const f = useCurrentFrame();
   const t = f / FPS;
+  if (tl.kind === 'game') return null;
   const start = sf(tl.words[11].s);
   const end = sf(tl.inserts.OUTRO.start);
   if (f < start || f >= end) return null;
@@ -193,13 +197,14 @@ export const OutroCard: React.FC = () => {
   const f = useCurrentFrame();
   const s = sf(tl.inserts.OUTRO.start), l = f - s;
   if (l < 0) return null;
+  const O = tl.outro ?? { big: ['А ТЫ КАК', 'ДУМАЕШЬ?'], small: ['Смогли бы мы вернуть', 'прежний мир?'], follow: 'Подпишись — впереди новые эксперименты' };
   const a = backOut((l - 4) / 12, 1.8), b = easeOut((l - 22) / 12), c = backOut((l - 46) / 12, 2), d = easeOut((l - 70) / 14);
   const bounce = Math.abs(Math.sin(l * 0.15)) * 18;
   return (
     <AbsoluteFill>
       <div style={{ position: 'absolute', top: 360, left: 60, right: 60, textAlign: 'center' }}>
-        <div style={{ fontFamily: FONT, fontWeight: 900, fontSize: 110, lineHeight: 1.05, color: '#ffe14a', ...stroke(16), transform: `scale(${a})`, textShadow: '0 12px 40px rgba(0,0,0,0.6)' }}>А ТЫ КАК<br />ДУМАЕШЬ?</div>
-        <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 58, lineHeight: 1.2, color: '#fff', ...stroke(10), marginTop: 40, opacity: b, transform: `translateY(${(1 - b) * 30}px)` }}>Смогли бы мы вернуть<br />прежний мир?</div>
+        <div style={{ fontFamily: FONT, fontWeight: 900, fontSize: 110, lineHeight: 1.05, color: '#ffe14a', ...stroke(16), transform: `scale(${a})`, textShadow: '0 12px 40px rgba(0,0,0,0.6)' }}>{O.big[0]}<br />{O.big[1]}</div>
+        <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 58, lineHeight: 1.2, color: '#fff', ...stroke(10), marginTop: 40, opacity: b, transform: `translateY(${(1 - b) * 30}px)` }}>{O.small[0]}<br />{O.small[1]}</div>
       </div>
       <div style={{ position: 'absolute', top: 1180, left: 0, right: 0, textAlign: 'center', transform: `scale(${c})` }}>
         <div style={{ display: 'inline-block', background: '#ff3b3b', color: '#fff', fontFamily: FONT, fontWeight: 900, fontSize: 56, padding: '22px 48px', borderRadius: 30, boxShadow: '0 16px 40px rgba(0,0,0,0.5)' }}>Пиши в комментариях</div>
@@ -207,7 +212,7 @@ export const OutroCard: React.FC = () => {
           <svg width="90" height="90" viewBox="0 0 90 90"><path d="M45 10 L45 70 M20 48 L45 74 L70 48" stroke="#fff" strokeWidth="12" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </div>
       </div>
-      <div style={{ position: 'absolute', top: 1450, left: 60, right: 60, textAlign: 'center', opacity: d, fontFamily: FONT, fontWeight: 700, fontSize: 40, color: '#dfe6ff', ...stroke(6) }}>Подпишись — впереди новые эксперименты</div>
+      <div style={{ position: 'absolute', top: 1450, left: 60, right: 60, textAlign: 'center', opacity: d, fontFamily: FONT, fontWeight: 700, fontSize: 40, color: '#dfe6ff', ...stroke(6) }}>{O.follow}</div>
     </AbsoluteFill>
   );
 };
@@ -223,7 +228,7 @@ export const TransitionFx: React.FC = () => {
     if (s.tr === 'glitch') { if (d >= -4 && d < 9) glitch = Math.max(glitch, 1 - Math.abs(d - 1) / 9); }
   }
   // extra flashes on big impacts
-  for (const n of ['shockwave', 'flash_hit', 'hook_boom']) { const c = sf(tl.cues[n].t); const d = f - c; if (d >= 0 && d < 8) flash = Math.max(flash, (1 - d / 8) * (n === 'hook_boom' ? 0.55 : 0.8)); }
+  for (const n of (tl.flashCues ?? ['shockwave', 'flash_hit', 'hook_boom'])) { if (!tl.cues[n]) continue; const c = sf(tl.cues[n].t); const d = f - c; if (d >= 0 && d < 8) flash = Math.max(flash, (1 - d / 8) * (n === 'hook_boom' ? 0.55 : 0.8)); }
   return (
     <AbsoluteFill style={{ pointerEvents: 'none' }}>
       <AbsoluteFill style={{ background: 'radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.42) 100%)' }} />
