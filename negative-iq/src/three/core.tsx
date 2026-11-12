@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { ThreeCanvas } from '@remotion/three';
+import { useVideoConfig } from 'remotion';
 import { useThree } from '@react-three/fiber';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { W, H } from '../lib/tl';
@@ -137,10 +138,12 @@ const Perf: React.FC = () => {
 export const Q = { res: 0.6667, shadows: true as boolean | string, aa: true, debug: false };
 const ShadowType: React.FC = () => { const { gl } = useThree(); gl.shadowMap.enabled = !!Q.shadows; gl.shadowMap.type = Q.shadows === 'soft' ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap; return null; };
 export const Stage: React.FC<{ children: React.ReactNode; bg?: string; style?: React.CSSProperties }> = ({ children, bg = '#000', style }) => {
-  const w = Math.round(W * Q.res), h = Math.round(H * Q.res);
+  const vc = useVideoConfig();
+  const VW = vc.width, VH = vc.height;
+  const w = Math.round(VW * Q.res), h = Math.round(VH * Q.res);
   return (
     <div style={{ position: 'absolute', inset: 0, background: bg, overflow: 'hidden', ...style }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, transform: `scale(${W / w})`, transformOrigin: '0 0' }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, transform: `scale(${VW / w})`, transformOrigin: '0 0' }}>
         <ThreeCanvas width={w} height={h} shadows={!!Q.shadows} gl={{ antialias: Q.aa, powerPreference: 'high-performance' }} camera={{ fov: 45, near: 0.1, far: 4000, position: [0, 2, 10] }}>
           <ShadowType />
           {children}

@@ -134,7 +134,17 @@ BED_GAME = {
     'space': ['title', 'loading', 'gg2_sim', 'outro'],
     'studio': ['gg1_lab', 'I1', 'I2', 'I3', 'I4', 'I5', 'I6'],
 }
-BED = BED_GAME if GAME else BED_IQ
+BED_LONG = {
+    'city': ['L02_world', 'L03_pixel', 'L05_gameworld', 'L07_sunrise', 'L17_trash', 'L19_loops', 'L20_dog', 'L21_cars', 'L22_lod', 'L24_saving', 'L26_quests', 'L27_bread',
+             'L32_garages', 'L36_lag', 'L37_freeze', 'L38_fall', 'L41_lagfact', 'L42_stranger', 'L43_chat', 'L44_players', 'L45_jump', 'L46_lives', 'L47_save', 'L49_bus', 'L51_best',
+             'L53_fixed', 'L54_patch', 'L57_flyer', 'L58_money', 'L60_banned', 'L61_clip', 'L62_speedrun', 'L72_button', 'L73_press'],
+    'room': ['L01_wake', 'L04_notdream', 'L08_eyes', 'L09_hpbar', 'L10_level', 'L11_tutorial', 'L12_inventory', 'L13_fridge', 'L14_mom', 'L15_npc', 'L16_dad', 'L18_choice',
+             'L25_teeth', 'L28_boss', 'L30_pay', 'L31_discount', 'L33_room', 'L34_egg', 'L35_name', 'L40_respawn', 'L48_mug', 'L50_exam', 'L67_bostrom', 'L71_dev'],
+    'wind': ['L29_wall', 'L55_noload', 'L63_menu', 'L64_confirm'],
+    'space': ['title', 'L39_under', 'L66_sim', 'L68_worlds', 'L69_chance', 'L70_pixels', 'L74_cta', 'END'],
+    'studio': ['L06_teaser', 'L23_lodfact', 'L52_reaction', 'L56_updates', 'L65_lab'] + [f'C{i}' for i in range(1, 11)],
+}
+BED = BED_LONG if tl.get('long') else BED_GAME if GAME else BED_IQ
 LV = {'city': -21, 'room': -30, 'chaos': -21, 'wind': -22, 'space': -26, 'studio': -32}
 
 

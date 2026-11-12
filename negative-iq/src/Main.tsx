@@ -7,7 +7,7 @@ import '@fontsource/montserrat/900.css';
 import '@fontsource/russo-one/400.css';
 import { setTimeline } from './lib/tl';
 import TL_IQ from './timeline.json';
-import { Subtitles, HookGauge, TitleCard, Interludes, CornerHud, OutroCard, TransitionFx, ShotWrap } from './overlay/Overlays';
+import { Subtitles, HookGauge, TitleCard, Interludes, CornerHud, OutroCard, TransitionFx, ShotWrap, PortraitColumn } from './overlay/Overlays';
 import { SCENES } from './scenes';
 import { Q } from './three/core';
 
@@ -39,9 +39,9 @@ export const Movie: React.FC<{ timeline: any; scenes: Record<string, React.FC>; 
         );
       })}
       <HookGauge />
-      <TitleCard />
+      <PortraitColumn dy={-300}><TitleCard /></PortraitColumn>
       {extra}
-      <Interludes />
+      <PortraitColumn dy={-360}><Interludes /></PortraitColumn>
       <CornerHud />
       <OutroCard />
       <Subtitles />

@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { tl, sf, FPS } from '../lib/tl';
 import { clamp, backOut, easeOut, smoother, ramp, hash, lerp, easeInOut } from '../lib/anim';
 
@@ -7,10 +7,20 @@ const FONT = 'Montserrat, sans-serif';
 const TECH = '"Russo One", Montserrat, sans-serif';
 const stroke = (px: number, color = '#000') => ({ WebkitTextStroke: `${px}px ${color}`, paintOrder: 'stroke fill' as const });
 
+/** true for 16:9 compositions */
+export const useLand = () => { const v = useVideoConfig(); return v.width > v.height; };
+/** in landscape, place portrait-designed overlays (1080×1920 coordinates) into a centred column */
+export const PortraitColumn: React.FC<{ children: React.ReactNode; dy?: number }> = ({ children, dy = -330 }) => {
+  const land = useLand();
+  if (!land) return <>{children}</>;
+  return <div style={{ position: 'absolute', left: 420, top: dy, width: 1080, height: 1920 }}>{children}</div>;
+};
+
 // ------------------------------------------------------------------ subtitles
 const IQ_RED = [9, 10, 28, 29, 35, 80, 85, 118, 127, 146, 215, 221, 222];
 export const Subtitles: React.FC = () => {
   const f = useCurrentFrame();
+  const land = useLand();
   const t = f / FPS;
   if (tl.outro?.fast && t >= tl.inserts.OUTRO.start) return null;
   if (tl.title?.fast && t >= tl.inserts.TITLE.start && t < tl.inserts.TITLE.start + tl.title.dur + 0.2) return null;
@@ -21,8 +31,8 @@ export const Subtitles: React.FC = () => {
   const fade = clamp(outF / 3);
   const lift = (1 - easeOut(inF / 6)) * 24;
   return (
-    <div style={{ position: 'absolute', left: 60, right: 60, top: 1150, height: 420, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: fade, transform: `translateY(${lift}px)` }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', columnGap: 26, rowGap: 4, maxWidth: 960 }}>
+    <div style={{ position: 'absolute', left: land ? 160 : 60, right: land ? 160 : 60, top: land ? 790 : 1150, height: land ? 250 : 420, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: fade, transform: `translateY(${lift}px) scale(${land ? 0.86 : 1})` }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', columnGap: 26, rowGap: 4, maxWidth: land ? 1500 : 960 }}>
         {sub.words.filter((w: any) => w.w && w.w !== '—').map((w: any, i: number) => {
           const ws = sf(w.s) - 1;
           const shown = f >= ws;
@@ -87,6 +97,7 @@ export const HookGauge: React.FC = () => {
 // ------------------------------------------------------------------ title card
 export const TitleCard: React.FC = () => {
   const f = useCurrentFrame();
+  const land = useLand();
   const T = tl.title ?? { small: 'ЧТО, ЕСЛИ…', big: 'IQ < 0', sub: 'НАУЧНО-ФАНТАСТИЧЕСКИЙ ЭКСПЕРИМЕНТ', dur: tl.inserts.TITLE.dur };
   const k = T.fast ? 2.5 : 1;
   const s = sf(tl.inserts.TITLE.start), d = sf(T.dur) * k;
@@ -101,7 +112,7 @@ export const TitleCard: React.FC = () => {
         <div style={{ fontFamily: FONT, fontWeight: 900, fontSize: 92, color: '#fff', ...stroke(12), transform: `scale(${p1})`, letterSpacing: 4 }}>{T.small}</div>
         <div style={{ position: 'relative', height: 330, marginTop: 10 }}>
           {[['#00f0ff', -8, 0.7], ['#ff2050', 8, 0.7], ['#ffffff', 0, 1]].map(([c, dx, o]: any, i) => (
-            <div key={i} style={{ position: 'absolute', left: 0, right: 0, fontFamily: TECH, fontSize: T.big.length > 7 ? 190 : 300, lineHeight: 1.05, color: c, opacity: o, mixBlendMode: i < 2 ? 'screen' : 'normal', transform: `translateX(${dx * (l < 14 ? 3 : 1) + (i < 2 ? Math.sin(l * 1.3 + i) * 4 : 0)}px) scale(${p2})`, ...(i === 2 ? stroke(16) : {}), textShadow: i === 2 ? (tl.kind === 'game' ? '0 0 60px rgba(255,43,214,0.9)' : '0 0 60px rgba(255,40,60,0.9)') : 'none' }}>{T.big}</div>
+            <div key={i} style={{ position: 'absolute', left: land ? -400 : 0, right: land ? -400 : 0, whiteSpace: land ? 'nowrap' : undefined, fontFamily: TECH, fontSize: T.big.length > 7 ? (land ? 200 : 190) : 300, lineHeight: 1.05, color: c, opacity: o, mixBlendMode: i < 2 ? 'screen' : 'normal', transform: `translateX(${dx * (l < 14 ? 3 : 1) + (i < 2 ? Math.sin(l * 1.3 + i) * 4 : 0)}px) scale(${p2})`, ...(i === 2 ? stroke(16) : {}), textShadow: i === 2 ? (tl.kind === 'game' ? '0 0 60px rgba(255,43,214,0.9)' : '0 0 60px rgba(255,40,60,0.9)') : 'none' }}>{T.big}</div>
           ))}
         </div>
         <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 46, color: '#ffe14a', ...stroke(8), opacity: p3, transform: `translateY(${(1 - p3) * 30}px)`, letterSpacing: 6 }}>{T.sub}</div>
@@ -122,7 +133,8 @@ export const Interludes: React.FC = () => {
   const s = sf(ch.ins_start), l = f - s;
   const D = sf(ch.ins_dur);
   const short = !!ch.short;
-  const cardIn = 10, cardOut = short ? -1 : Math.round(D * 0.535), clkIn = short ? 0 : cardOut + 2, titleF = short ? 10 : sf(ch.start) - s;
+  const noFact = !ch.fact;
+  const cardIn = 10, cardOut = short || noFact ? -1 : Math.round(D * 0.535), clkIn = short || noFact ? 0 : cardOut + 2, titleF = short ? 10 : sf(ch.start) - s;
   const endF = sf(ch.end) + 18 - s;
   const fact = ch.fact;
   // fact card
@@ -130,7 +142,7 @@ export const Interludes: React.FC = () => {
   const qIn = easeOut((l - Math.round(D * 0.3)) / 10);
   const showCard = !!fact && l >= cardIn && l < cardOut;
   // clock
-  const [t0, t1] = TARGET[ch.ins];
+  const [t0, t1] = ch.target ?? TARGET[ch.ins];
   const race = clamp((l - clkIn) / Math.max(1, titleF - clkIn - 2));
   const val = lerp(t0, t1, Math.pow(race, 1.6));
   const slam = l >= titleF - 2;
@@ -199,6 +211,7 @@ export const CornerHud: React.FC = () => {
 // ------------------------------------------------------------------ outro
 export const OutroCard: React.FC = () => {
   const f = useCurrentFrame();
+  if (!tl.inserts.OUTRO || tl.outro === null) return null;
   const s = sf(tl.inserts.OUTRO.start), l = f - s;
   if (l < 0) return null;
   const O = tl.outro ?? { big: ['А ТЫ КАК', 'ДУМАЕШЬ?'], small: ['Смогли бы мы вернуть', 'прежний мир?'], follow: 'Подпишись — впереди новые эксперименты' };
@@ -243,7 +256,7 @@ export const TransitionFx: React.FC = () => {
           {Array.from({ length: 9 }).map((_, i) => {
             const y = hash(i * 7.1 + Math.floor(f / 2) * 3.3) * 1920, h = 20 + hash(i + f) * 140;
             const c = i % 3 === 0 ? 'rgba(0,240,255,0.5)' : i % 3 === 1 ? 'rgba(255,0,90,0.5)' : 'rgba(255,255,255,0.35)';
-            return <div key={i} style={{ position: 'absolute', left: (hash(i * 3 + f) - 0.5) * 300, top: y, width: 1300, height: h * glitch, background: c, mixBlendMode: 'screen' }} />;
+            return <div key={i} style={{ position: 'absolute', left: (hash(i * 3 + f) - 0.5) * 300, top: y, width: 2200, height: h * glitch, background: c, mixBlendMode: 'screen' }} />;
           })}
         </AbsoluteFill>
       )}

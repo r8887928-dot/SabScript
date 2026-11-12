@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { tl, sf, FPS } from '../lib/tl';
 import { clamp, backOut, easeOut, lerp, hash, smoother } from '../lib/anim';
 
@@ -24,9 +24,12 @@ const Heart: React.FC<{ on: boolean; s?: number }> = ({ on, s = 46 }) => (
 export const GameHud: React.FC = () => {
   const f = useCurrentFrame();
   const H = tl.hud;
-  const show = (f >= sf(H.start) && f < sf(H.end)) || inShot(f, 'gh2_world', 'gh3_pixel');
-  if (!show || inInterlude(f) || inShot(f, 'title', 'loading')) return null;
-  const tease = inShot(f, 'gh2_world', 'gh3_pixel');
+  const teaseIds = H.tease ?? ['gh2_world', 'gh3_pixel'];
+  const show = (f >= sf(H.start) && f < sf(H.end)) || inShot(f, ...teaseIds);
+  const vc = useVideoConfig();
+  const land = vc.width > vc.height;
+  if (!show || inInterlude(f) || inShot(f, 'title', 'loading', ...(H.hideIn ?? []))) return null;
+  const tease = inShot(f, ...teaseIds);
   const flick = tease ? (hash(Math.floor(f / 3)) > 0.35 ? 1 : 0.15) : 1;
   const t = f / FPS;
   const lvl = t < H.lvl2 ? 1 : t < H.ch4 ? 2 + (t > H.coins ? 1 : 0) : t < H.ch5 ? 6 : t < H.ch6 ? 11 : 30;
@@ -40,7 +43,7 @@ export const GameHud: React.FC = () => {
   const lag = t >= H.lag0 && t < H.lag1 && !inInterlude(f);
   const appear = backOut((f - sf(H.start)) / 10, 1.6);
   return (
-    <div style={{ position: 'absolute', left: 50, top: 240, opacity: flick, transform: `scale(${tease ? 1 : Math.min(1, appear)})`, transformOrigin: '0 0' }}>
+    <div style={{ position: 'absolute', left: land ? 36 : 50, top: land ? 30 : 240, opacity: flick, transform: `scale(${(tease ? 1 : Math.min(1, appear)) * (land ? 0.8 : 1)})`, transformOrigin: '0 0' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', background: 'rgba(5,8,20,0.6)', borderRadius: 22, border: '3px solid rgba(255,255,255,0.25)' }}>
         {[0, 1, 2, 3, 4].map((i) => <Heart key={i} on={i < hp} />)}
       </div>

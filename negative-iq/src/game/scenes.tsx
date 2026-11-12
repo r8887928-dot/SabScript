@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { useCurrentFrame } from 'remotion';
+import { useCurrentFrame, useVideoConfig } from 'remotion';
 import { ThreeCanvas } from '@remotion/three';
 import { useThree } from '@react-three/fiber';
 import { Stage, Lights, Cam, LOOKS, mixLook, mat, basic, spr, textTex, radialTex, canvasTex, Blob, Q } from '../three/core';
@@ -17,12 +17,12 @@ import { shotClock, W, H } from '../lib/tl';
 import { camK, ramp, lerp, rng, easeOut, easeIn, smoother, kick, clamp, pop, wobble, backOut } from '../lib/anim';
 
 export const HERO = () => randomLook(3, { skin: '#f0c4a0', hair: '#3a2416', hairStyle: 'short', shirt: '#3f88c5' });
-const MOM = () => randomLook(901, { skin: '#f2c7a5', hair: '#7a3b22', hairStyle: 'bun', shirt: '#e86f8a', skirt: true, pants: '#6a4c93' });
-const DAY = { ...LOOKS.day, top: '#4a86d6', hor: '#c8d8ee' };
+export const MOM = () => randomLook(901, { skin: '#f2c7a5', hair: '#7a3b22', hairStyle: 'bun', shirt: '#e86f8a', skirt: true, pants: '#6a4c93' });
+export const DAY = { ...LOOKS.day, top: '#4a86d6', hor: '#c8d8ee' };
 
 // ------------------------------------------------------------------ small helpers
 /** camera-facing text label (sprite) */
-const Label: React.FC<{ text: string; pos: number[]; h?: number; bg?: string; fg?: string; s?: number; w?: number }> = ({ text, pos, h = 0.22, bg = 'rgba(10,14,30,0.85)', fg = '#ffffff', s = 1, w }) => {
+export const Label: React.FC<{ text: string; pos: number[]; h?: number; bg?: string; fg?: string; s?: number; w?: number }> = ({ text, pos, h = 0.22, bg = 'rgba(10,14,30,0.85)', fg = '#ffffff', s = 1, w }) => {
   const lines = text.split('\n');
   const longest = Math.max(...lines.map((l) => l.length));
   const pxW = Math.max(256, Math.min(1400, longest * 58 + 90)), pxH = 120 * lines.length + 20;
@@ -31,7 +31,7 @@ const Label: React.FC<{ text: string; pos: number[]; h?: number; bg?: string; fg
   const hh = h * lines.length * s;
   return <sprite position={pos as any} scale={[(w ?? hh * aspect), hh, 1]} material={spr('#ffffff', { map: tex })} />;
 };
-const Exclaim: React.FC<{ pos: number[]; s?: number; color?: string }> = ({ pos, s = 1, color = '#ffd23f' }) => (
+export const Exclaim: React.FC<{ pos: number[]; s?: number; color?: string }> = ({ pos, s = 1, color = '#ffd23f' }) => (
   <group position={pos as any} scale={[s, s, s]}>
     <mesh position={[0, 0.12, 0]} material={mat(color, { r: 0.3, e: color, ei: 0.35 })}><capsuleGeometry args={[0.06, 0.2, 6, 12]} /></mesh>
     <mesh position={[0, -0.14, 0]} material={mat(color, { r: 0.3, e: color, ei: 0.35 })}><sphereGeometry args={[0.065, 14, 10]} /></mesh>
@@ -47,7 +47,7 @@ export const HPBar: React.FC<{ pos: number[]; hp?: number; s?: number }> = ({ po
   });
   return <sprite position={pos as any} scale={[1.0 * s, 0.25 * s, 1]} material={spr('#ffffff', { map: tex })} />;
 };
-const Wire: React.FC<{ on: boolean; color?: string }> = ({ on, color = '#2ef2ff' }) => {
+export const Wire: React.FC<{ on: boolean; color?: string }> = ({ on, color = '#2ef2ff' }) => {
   const { scene } = useThree();
   const m = useMemo(() => new THREE.MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity: 0.85, fog: false }), [color]);
   scene.overrideMaterial = on ? m : null;
@@ -55,7 +55,7 @@ const Wire: React.FC<{ on: boolean; color?: string }> = ({ on, color = '#2ef2ff'
 };
 
 /** bedroom set (bed along -z, window behind) */
-const Bedroom: React.FC = () => (
+export const Bedroom: React.FC = () => (
   <group>
     <group position={[0, 0, -1]}><Room w={6} d={6} h={3} wall="#cfe0ef" floor="wood" windows="back" light={0.8} /></group>
     <pointLight position={[-1.5, 2.2, -2.5]} intensity={18} distance={8} color="#ffd9a8" />
@@ -72,12 +72,12 @@ const Bedroom: React.FC = () => (
   </group>
 );
 /** hero lying in bed: person rotated onto its back; blanket over the body */
-const LyingHero: React.FC<{ pose: Pose }> = ({ pose }) => (
+export const LyingHero: React.FC<{ pose: Pose }> = ({ pose }) => (
   <group position={[-0.9, 0.72, -1.55]} rotation={[-Math.PI / 2, 0, 0]}>
     <Person look={HERO()} blob={false} pos={[0, -1.47, 0]} pose={merge({ armL: [0, 0.15, 0], armR: [0, 0.15, 0] }, pose)} />
   </group>
 );
-const Blanket: React.FC = () => <mesh geometry={rbox(1.56, 0.18, 1.45, 0.08)} position={[-0.9, 0.86, -0.38]} material={mat('#5a8fd6', { r: 0.9 })} castShadow receiveShadow />;
+export const Blanket: React.FC = () => <mesh geometry={rbox(1.56, 0.18, 1.45, 0.08)} position={[-0.9, 0.86, -0.38]} material={mat('#5a8fd6', { r: 0.9 })} castShadow receiveShadow />;
 
 // ------------------------------------------------------------------ HOOK
 export const GH1Wake: React.FC = () => {
@@ -115,7 +115,8 @@ export const GH3Pixel: React.FC = () => {
   const k = shotClock('gh3_pixel');
   const steps = [0.66, 0.66, 0.3, 0.15, 0.08, 0.05];
   const p = steps[Math.min(steps.length - 1, Math.floor((f / k.dur) * steps.length * 1.3))];
-  const w = Math.max(16, Math.round(W * p)), h = Math.max(28, Math.round(H * p));
+  const { width: W, height: H } = useVideoConfig();
+  const w = Math.max(16, Math.round(W * p)), h = Math.max(16, Math.round(H * p));
   const c = camK(f, [{ f: 0, p: [30, 70, 110], l: [0, 0, -10], fov: 46 }, { f: k.dur, p: [36, 82, 124], l: [0, 0, -10], fov: 46 }]);
   return (
     <div style={{ position: 'absolute', inset: 0, background: '#000', overflow: 'hidden' }}>
@@ -138,7 +139,7 @@ export const TitleBg: React.FC = () => {
     </div>
   );
 };
-function synth() {
+export function synth() {
   const hz = 1180;
   let grid = '';
   for (let i = -14; i <= 14; i++) grid += `<line x1='${540 + i * 30}' y1='${hz}' x2='${540 + i * 240}' y2='1920' stroke='#ff3df2' stroke-width='3' opacity='0.8'/>`;
@@ -219,7 +220,7 @@ export const GM3Level: React.FC = () => {
 };
 
 // ------------------------------------------------------------------ KITCHEN
-const Fridge: React.FC<{ glow: number; f: number; pos: number[] }> = ({ glow, f, pos }) => {
+export const Fridge: React.FC<{ glow: number; f: number; pos: number[] }> = ({ glow, f, pos }) => {
   const body = rbox(0.8, 1.9, 0.7, 0.06);
   const gm = useMemo(() => new THREE.MeshBasicMaterial({ color: '#ffd23f', transparent: true, side: THREE.BackSide, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }), []);
   gm.opacity = glow * (0.55 + 0.35 * Math.sin(f * 0.35));
@@ -234,7 +235,7 @@ const Fridge: React.FC<{ glow: number; f: number; pos: number[] }> = ({ glow, f,
     </group>
   );
 };
-const Kitchen: React.FC<{ f: number; glow?: number }> = ({ f, glow = 0 }) => (
+export const Kitchen: React.FC<{ f: number; glow?: number }> = ({ f, glow = 0 }) => (
   <group>
     <group position={[0, 0, -1]}><Room w={7} d={7} h={3} wall="#f3e6cf" floor="tile" windows="back" light={1.0} /></group>
     <mesh geometry={rbox(3.6, 0.9, 0.6, 0.02)} position={[-1.0, 0.45, -4.15]} material={mat('#8fb8a8', { r: 0.6 })} castShadow receiveShadow />
@@ -534,7 +535,7 @@ export const GD3Fall: React.FC = () => {
 };
 
 // ------------------------------------------------------------------ DAY 7
-const Floppy: React.FC<{ pos: number[]; s?: number; rot?: number }> = ({ pos, s = 1, rot = 0 }) => (
+export const Floppy: React.FC<{ pos: number[]; s?: number; rot?: number }> = ({ pos, s = 1, rot = 0 }) => (
   <group position={pos as any} scale={[s, s, s]} rotation={[0.2, rot, 0.1]}>
     <mesh geometry={rbox(0.6, 0.6, 0.06, 0.02)} material={mat('#2d3e8f', { r: 0.4 })} castShadow />
     <mesh position={[0.05, 0.19, 0.035]} material={mat('#c9ced6', { r: 0.25, m: 0.8 })}><boxGeometry args={[0.3, 0.2, 0.01]} /></mesh>
@@ -689,7 +690,7 @@ export const GG2Sim: React.FC = () => {
     </div>
   );
 };
-const RedButton: React.FC<{ s: number; press?: number }> = ({ s, press = 0 }) => (
+export const RedButton: React.FC<{ s: number; press?: number }> = ({ s, press = 0 }) => (
   <group scale={[s, s, s]}>
     <mesh position={[0, 0, 0]} material={mat('#2d3436', { r: 0.4, m: 0.5 })} castShadow><cylinderGeometry args={[0.55, 0.62, 0.22, 40]} /></mesh>
     <mesh position={[0, 0.17 - press * 0.08, 0]} material={mat('#e3122b', { r: 0.25, e: '#ff1a3a', ei: 0.5 })} castShadow><cylinderGeometry args={[0.42, 0.44, 0.16, 40]} /></mesh>
