@@ -12,6 +12,8 @@ const IQ_RED = [9, 10, 28, 29, 35, 80, 85, 118, 127, 146, 215, 221, 222];
 export const Subtitles: React.FC = () => {
   const f = useCurrentFrame();
   const t = f / FPS;
+  if (tl.outro?.fast && t >= tl.inserts.OUTRO.start) return null;
+  if (tl.title?.fast && t >= tl.inserts.TITLE.start && t < tl.inserts.TITLE.start + tl.title.dur + 0.2) return null;
   const sub = tl.subs.find((s: any) => t >= s.s - 0.05 && t < s.e);
   if (!sub) return null;
   const inF = f - sf(sub.s);
@@ -86,8 +88,9 @@ export const HookGauge: React.FC = () => {
 export const TitleCard: React.FC = () => {
   const f = useCurrentFrame();
   const T = tl.title ?? { small: 'ЧТО, ЕСЛИ…', big: 'IQ < 0', sub: 'НАУЧНО-ФАНТАСТИЧЕСКИЙ ЭКСПЕРИМЕНТ', dur: tl.inserts.TITLE.dur };
-  const s = sf(tl.inserts.TITLE.start), d = sf(T.dur);
-  const l = f - s;
+  const k = T.fast ? 2.5 : 1;
+  const s = sf(tl.inserts.TITLE.start), d = sf(T.dur) * k;
+  const l = (f - s) * k;
   if (l < 0 || l >= d + 6) return null;
   const out = clamp((d + 6 - l) / 8);
   const g = l < 10 ? (hash(l) - 0.5) * 40 : 0;
@@ -118,19 +121,20 @@ export const Interludes: React.FC = () => {
   if (!ch) return null;
   const s = sf(ch.ins_start), l = f - s;
   const D = sf(ch.ins_dur);
-  const cardIn = 10, cardOut = Math.round(D * 0.535), clkIn = cardOut + 2, titleF = sf(ch.start) - s;
+  const short = !!ch.short;
+  const cardIn = 10, cardOut = short ? -1 : Math.round(D * 0.535), clkIn = short ? 0 : cardOut + 2, titleF = short ? 10 : sf(ch.start) - s;
   const endF = sf(ch.end) + 18 - s;
   const fact = ch.fact;
   // fact card
   const cIn = backOut((l - cardIn) / 12, 1.5), cOut = clamp((cardOut - l) / 8);
   const qIn = easeOut((l - Math.round(D * 0.3)) / 10);
-  const showCard = l >= cardIn && l < cardOut;
+  const showCard = !!fact && l >= cardIn && l < cardOut;
   // clock
   const [t0, t1] = TARGET[ch.ins];
   const race = clamp((l - clkIn) / Math.max(1, titleF - clkIn - 2));
   const val = lerp(t0, t1, Math.pow(race, 1.6));
   const slam = l >= titleF - 2;
-  const clkP = backOut((l - clkIn) / 10, 1.6);
+  const clkP = backOut((l - clkIn) / (short ? 6 : 10), 1.6);
   const titleP = backOut((l - titleF + 1) / 9, 2.2);
   const outP = clamp((endF - l) / 8);
   const shake = slam && l < titleF + 8 ? (((l - titleF) % 2) ? -1 : 1) * (1 - (l - titleF) / 8) * 14 : 0;
@@ -198,10 +202,12 @@ export const OutroCard: React.FC = () => {
   const s = sf(tl.inserts.OUTRO.start), l = f - s;
   if (l < 0) return null;
   const O = tl.outro ?? { big: ['А ТЫ КАК', 'ДУМАЕШЬ?'], small: ['Смогли бы мы вернуть', 'прежний мир?'], follow: 'Подпишись — впереди новые эксперименты' };
-  const a = backOut((l - 4) / 12, 1.8), b = easeOut((l - 22) / 12), c = backOut((l - 46) / 12, 2), d = easeOut((l - 70) / 14);
+  const fast = !!O.fast;
+  const a = fast ? backOut(l / 7, 1.8) : backOut((l - 4) / 12, 1.8), b = fast ? easeOut((l - 4) / 7) : easeOut((l - 22) / 12), c = fast ? backOut((l - 8) / 7, 2) : backOut((l - 46) / 12, 2), d = fast ? easeOut((l - 12) / 8) : easeOut((l - 70) / 14);
   const bounce = Math.abs(Math.sin(l * 0.15)) * 18;
   return (
     <AbsoluteFill>
+      {fast && <AbsoluteFill style={{ background: 'rgba(5,6,20,0.55)', opacity: clamp(l / 6) }} />}
       <div style={{ position: 'absolute', top: 360, left: 60, right: 60, textAlign: 'center' }}>
         <div style={{ fontFamily: FONT, fontWeight: 900, fontSize: 110, lineHeight: 1.05, color: '#ffe14a', ...stroke(16), transform: `scale(${a})`, textShadow: '0 12px 40px rgba(0,0,0,0.6)' }}>{O.big[0]}<br />{O.big[1]}</div>
         <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 58, lineHeight: 1.2, color: '#fff', ...stroke(10), marginTop: 40, opacity: b, transform: `translateY(${(1 - b) * 30}px)` }}>{O.small[0]}<br />{O.small[1]}</div>

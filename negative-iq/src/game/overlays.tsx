@@ -10,7 +10,7 @@ const W = (i: number) => sf(tl.words[i].s);
 const WE = (i: number) => sf(tl.words[i].e);
 const CUE = (n: string) => sf(tl.cues[n].t);
 const shot = (id: string) => tl.shots.find((s: any) => s.id === id);
-const inShot = (f: number, ...ids: string[]) => ids.some((id) => { const s = shot(id); return f >= s.from && f < s.to; });
+const inShot = (f: number, ...ids: string[]) => ids.some((id) => { const s = shot(id); return !!s && f >= s.from && f < s.to; });
 const inInterlude = (f: number) => tl.chapters.some((c: any) => f >= sf(c.ins_start) && f < sf(c.end) + 18);
 
 const Coin: React.FC<{ s?: number }> = ({ s = 44 }) => (
@@ -29,13 +29,13 @@ export const GameHud: React.FC = () => {
   const tease = inShot(f, 'gh2_world', 'gh3_pixel');
   const flick = tease ? (hash(Math.floor(f / 3)) > 0.35 ? 1 : 0.15) : 1;
   const t = f / FPS;
-  const lvl = t < H.lvl2 ? 1 : t < tl.inserts.I4.start ? 2 + (t > sf(H.coins) / FPS ? 1 : 0) : t < tl.inserts.I5.start ? 6 : t < tl.inserts.I6.start ? 11 : 30;
-  const xp = t < H.xp ? 0.15 : t < H.lvl2 ? lerp(0.15, 1, easeOut((t - H.xp) / 0.6)) : t < tl.inserts.I4.start ? 0.25 : 0.6;
+  const lvl = t < H.lvl2 ? 1 : t < H.ch4 ? 2 + (t > H.coins ? 1 : 0) : t < H.ch5 ? 6 : t < H.ch6 ? 11 : 30;
+  const xp = t < H.xp ? 0.15 : t < H.lvl2 ? lerp(0.15, 1, easeOut((t - H.xp) / 0.6)) : t < H.ch4 ? 0.25 : 0.6;
   let hp = 5;
   if (t >= H.wall) hp = 4;
   if (t >= H.fall + 1.2) hp = 3;
   if (t >= H.load) hp = 5;
-  const coins = t < H.coins ? 0 : t < tl.inserts.I5.start ? 100 : t < tl.inserts.I6.start ? 4250 : 99999;
+  const coins = t < H.coins ? 0 : t < H.ch5 ? 100 : t < H.ch6 ? 4250 : 99999;
   const coinPop = t >= H.coins && t < H.coins + 0.5 ? 1 + 0.3 * Math.sin(((t - H.coins) / 0.5) * Math.PI) : 1;
   const lag = t >= H.lag0 && t < H.lag1 && !inInterlude(f);
   const appear = backOut((f - sf(H.start)) / 10, 1.6);
@@ -80,12 +80,12 @@ export const GameMoments: React.FC = () => {
   const H = tl.hud;
   const out: React.ReactNode[] = [];
   // hook: PRESS START
-  if (inShot(f, 'gh3_pixel')) {
+  if (false && inShot(f, 'gh3_pixel')) {
     out.push(<div key="ps" style={{ position: 'absolute', top: 720, left: 0, right: 0, textAlign: 'center', fontFamily: TECH, fontSize: 96, color: '#fff', ...stroke(10), textShadow: '0 0 40px #ff2bd6', opacity: (f % 12) < 8 ? 1 : 0.2 }}>НАЖМИ СТАРТ</div>);
   }
   // loading screen
   const ld = shot('loading');
-  if (f >= ld.from && f < ld.to) {
+  if (ld && f >= ld.from && f < ld.to) {
     const p = clamp((f - ld.from) / (ld.dur - 14));
     const pct = Math.min(100, Math.round(easeOut(p) * 100));
     out.push(
@@ -106,7 +106,7 @@ export const GameMoments: React.FC = () => {
   out.push(<Pop key="lvl" f={f} a={W(29) - 2} d={44} style={{ top: 620 }}><div style={{ display: 'inline-block', fontFamily: TECH, fontSize: 130, color: '#ffd23f', ...stroke(14), textShadow: '0 0 50px rgba(255,210,60,0.8)' }}>УРОВЕНЬ 1</div></Pop>);
   // +10 XP, level up
   out.push(<Pop key="xp" f={f} a={sf(H.xp) - 2} d={40} rise={3} style={{ top: 700 }}><div style={{ display: 'inline-block', fontFamily: TECH, fontSize: 120, color: '#7dffb0', ...stroke(14), textShadow: '0 0 40px #21f0ff' }}>+10 ОПЫТА</div></Pop>);
-  out.push(<Pop key="lu" f={f} a={sf(H.lvl2) + 14} d={40} style={{ top: 600 }}><div style={{ display: 'inline-block', fontFamily: TECH, fontSize: 92, color: '#ffd23f', ...stroke(12) }}>НОВЫЙ УРОВЕНЬ!</div></Pop>);
+  out.push(<Pop key="lu" f={f} a={sf(H.xp) + 28} d={24} style={{ top: 600 }}><div style={{ display: 'inline-block', fontFamily: TECH, fontSize: 92, color: '#ffd23f', ...stroke(12) }}>НОВЫЙ УРОВЕНЬ!</div></Pop>);
   // quests panel
   const q0 = W(102) - 4, q1 = W(113);
   if (f >= q0 && f < q1) {
@@ -225,7 +225,7 @@ export const GameMoments: React.FC = () => {
     );
   }
   // the button label
-  const bt = W(219) + 4, btEnd = shot('outro').from;
+  const bt = W(219) + 4, btEnd = sf(tl.inserts.OUTRO.start);
   if (f >= bt && f < btEnd) out.push(<div key="btn" style={{ position: 'absolute', left: 0, right: 0, top: 600, textAlign: 'center', transform: `scale(${backOut((f - bt) / 9, 2)})` }}><div style={{ display: 'inline-block', fontFamily: TECH, fontSize: 70, color: '#fff', background: 'rgba(190,10,30,0.85)', padding: '14px 40px', borderRadius: 20, border: '4px solid #ff6a7a', textShadow: '0 0 20px #ff2a3a' }}>ВЫЙТИ ИЗ ИГРЫ</div></div>);
   // lag spinner on the lag shot
   if (inShot(f, 'gd1_lag')) {

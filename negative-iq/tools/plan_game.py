@@ -37,8 +37,9 @@ def quiet_mid(t0, t1):
     return (t0 + t1) / 2 if len(q) == 0 else (int(t0 * 100) + (q[0] + q[-1]) / 2) / 100
 
 
-INSERTS = [('TITLE', 13, 7.5), ('I1', 30, 9.0), ('I2', 62, 9.0), ('I3', 99, 9.0), ('I4', 127, 9.0), ('I5', 149, 9.0), ('I6', 171, 9.0), ('BEAT1', 196, 1.2), ('BEAT2', 212, 1.5)]
-OUTRO = 8.5
+# video = exactly the length of the voice-over: no inserted time
+INSERTS = []
+OUTRO = 0.0
 cuts = []
 for name, wi, dur in INSERTS:
     c = round(quiet_mid(words[wi]['e'] - 0.2, words[wi + 1]['s'] + 0.2) * FPS) / FPS
@@ -52,8 +53,7 @@ for name, wi, c, dur in cuts:
     prev = c
 blocks.append({'vin': prev, 'vout': VOICE_LEN, 'g': prev + offset})
 voice_end_g = VOICE_LEN + offset
-inserts['OUTRO'] = {'start': voice_end_g + 0.1, 'dur': OUTRO}
-TOTAL = voice_end_g + 0.1 + OUTRO
+TOTAL = VOICE_LEN
 TOTAL_FRAMES = int(round(TOTAL * FPS))
 
 
@@ -81,42 +81,39 @@ SHOTS = [
     ('gh1_wake', 0.0, 'none'),
     ('gh2_world', 'w6', 'zoomout'),
     ('gh3_pixel', 'w12', 'glitch'),
-    ('title', 'TITLE', 'glitch'),
-    ('loading', ('TITLE', 3.5), 'flash'),
     ('gm1_bed', 'w14', 'fade'),
     ('gm2_hpbar', 'w19', 'cut'),
     ('gm3_level', 'w25', 'zoomin'),
-    ('I1', 'I1', 'glitch'),
+    ('I1', 'w31', 'glitch'),
     ('ga1_fridge', 'w34', 'whip'),
     ('ga2_mom', 'w46', 'whip'),
     ('ga3_npc', 'w58', 'zoomin'),
-    ('I2', 'I2', 'glitch'),
+    ('I2', 'w63', 'glitch'),
     ('gb1_loops', 'w65', 'whip'),
     ('gb2_cars', 'w75', 'whip'),
     ('gb3_lod', 'w79', 'whip'),
     ('gb4_teeth', 'w88', 'whip'),
-    ('I3', 'I3', 'glitch'),
+    ('I3', 'w100', 'glitch'),
     ('gc1_quests', 'w102', 'zoomin'),
     ('gc2_bread', 'w104', 'whip'),
     ('gc3_boss', 'w110', 'glitch'),
     ('gc4_wall', 'w118', 'whip'),
-    ('I4', 'I4', 'glitch'),
+    ('I4', 'w128', 'glitch'),
     ('gd1_lag', 'w130', 'cut'),
     ('gd2_freeze', 'w133', 'glitch'),
     ('gd3_fall', 'w141', 'cut'),
-    ('I5', 'I5', 'glitch'),
+    ('I5', 'w150', 'glitch'),
     ('ge1_save', 'w152', 'zoomin'),
     ('ge2_mug', 'w160', 'whip'),
     ('ge3_bus', 'w163', 'whip'),
     ('ge4_best', 'w166', 'flash'),
-    ('I6', 'I6', 'glitch'),
+    ('I6', 'w172', 'glitch'),
     ('gf1_menu', 'w174', 'fade'),
     ('gf2_confirm', 'w185', 'cut'),
-    ('gg1_lab', 'BEAT1', 'fade'),
+    ('gg1_lab', 'w197', 'fade'),
     ('gg2_sim', 'w205', 'glitch'),
-    ('gg3_button', 'BEAT2', 'glitch'),
+    ('gg3_button', 'w213', 'glitch'),
     ('gg4_press', 'w225', 'zoomin'),
-    ('outro', 'OUTRO', 'flash'),
 ]
 shots = []
 for sid, a, tr in SHOTS:
@@ -139,8 +136,8 @@ FACTS = {
     'I5': {'tag': 'ФАКТ', 'text': 'Реакция человека на картинку — около четверти секунды.', 'sub': 'Профи-геймеры тренируют её годами.'},
     'I6': {'tag': 'ФАКТ', 'text': 'В 2003 году философ Ник Бостром предположил:', 'sub': 'мы можем жить в компьютерной симуляции.', 'q': 'Самое странное — впереди…'},
 }
-chapters = [{'ins': ins, 'title': title, 'clock': clock, 'start': T(f'w{w0}'), 'end': T(f'w{w1}e'), 'ins_start': inserts[ins]['start'],
-             'ins_dur': inserts[ins]['dur'], 'fact': FACTS[ins], 'w0': w0, 'w1': w1} for ins, title, clock, w0, w1 in CHAPTERS]
+chapters = [{'ins': ins, 'title': title, 'clock': clock, 'start': T(f'w{w0}'), 'end': T(f'w{w1}e'), 'ins_start': T(f'w{w0}') - LEAD,
+             'ins_dur': 0, 'fact': None, 'short': True, 'w0': w0, 'w1': w1} for ins, title, clock, w0, w1 in CHAPTERS]
 chapter_words = set()
 for c in CHAPTERS:
     chapter_words.update(range(c[3], c[4] + 1))
@@ -198,10 +195,6 @@ CUES = [
     ('hook_glitch', ('w12', -0.05), 'glitch', -6),
     ('hook_8bit', ('w13', 0.1), 'chip_powerup', -9),
     ('hook_boom', ('w13e', 0.02), 'boom', -4),
-    ('title_glitch', 'TITLE', 'glitch', -6),
-    ('title_hit', ('TITLE', 0.35), 'impact_big', -4),
-    ('load_blips', ('TITLE', 3.6), 'chip_loading', -14),
-    ('load_done', ('TITLE', 7.0), 'chip_ready', -9),
     ('birds', 'w14', 'birds', -12),
     ('eyes_open', ('w17', 0.1), 'chip_blip', -12),
     ('hp_appear', ('w23', -0.05), 'chip_powerup', -10),
@@ -243,52 +236,48 @@ CUES = [
     ('menu_move2', ('w180', 0.0), 'chip_blip', -12),
     ('menu_glitch', ('w182', 0.0), 'glitch', -9),
     ('dialog', ('w190', -0.05), 'chip_warning', -13),
-    ('heart', 'BEAT1', 'heartbeat', -8),
+    ('heart', ('w197', -0.3), 'heartbeat', -10),
     ('lab_drone', ('w197', 0.0), 'drone_low', -18),
     ('sim_glitch', ('w205', 0.0), 'glitch', -8),
     ('sim_power', ('w211', 0.0), 'power_down', -16),
-    ('rewind_now', 'BEAT2', 'rewind', -7),
-    ('present_city', ('BEAT2', 1.2), 'amb_city', -18),
+    ('rewind_now', ('w213', -0.1), 'rewind', -10),
+    ('present_city', ('w213', 1.2), 'amb_city', -18),
     ('button_appear', ('w219', -0.05), 'shimmer', -9),
     ('final_whoosh', ('w225', -0.15), 'whoosh_up', -10),
     ('final_hit', ('w227e', 0.15), 'impact_big', -7),
-    ('outro_shimmer', ('OUTRO', 0.2), 'chip_achievement', -12),
+    ('outro_shimmer', ('w225', 0.0), 'chip_achievement', -14),
 ]
-for ins in ['I1', 'I2', 'I3', 'I4', 'I5', 'I6']:
-    CUES += [(f'{ins}_glitch', ins, 'glitch', -7), (f'{ins}_stamp', (ins, 0.55), 'stamp', -6), (f'{ins}_whoosh', (ins, 4.75), 'whoosh', -10),
-             (f'{ins}_ticks', (ins, 5.0), 'clock_ticks', -13), (f'{ins}_slam', (f'{ins}e', -0.12), 'impact_big', -9)]
+for ins, title, clock, w0, w1 in CHAPTERS:
+    CUES += [(f'{ins}_glitch', (f'w{w0}', -0.1), 'glitch', -9), (f'{ins}_whoosh', (f'w{w0}', -0.25), 'whoosh', -12), (f'{ins}_slam', (f'w{w1}', 0.0), 'chip_select', -10)]
 cues = {name: {'t': round(T(a), 3), 'kind': kind, 'gain': gain} for name, a, kind, gain in CUES}
 
 MUSIC = [
     ('chip_hook', 0.0, ('w14', -0.6)),
-    ('chip_morning', ('w14', -0.6), 'I1'),
-    ('interlude', 'I1', ('w34', -0.1)),
-    ('chip_quirky', ('w34', -0.1), 'I2'),
-    ('interlude', 'I2', ('w65', -0.1)),
-    ('chip_quirky2', ('w65', -0.1), 'I3'),
-    ('interlude', 'I3', ('w102', -0.1)),
-    ('chip_quest', ('w102', -0.1), 'I4'),
-    ('interlude', 'I4', ('w130', -0.1)),
-    ('chip_lag', ('w130', -0.1), 'I5'),
-    ('interlude', 'I5', ('w152', -0.1)),
-    ('chip_happy', ('w152', -0.1), 'I6'),
-    ('interlude', 'I6', ('w174', -0.1)),
-    ('chip_menu', ('w174', -0.1), 'BEAT1'),
-    ('dark', 'BEAT1', ('w205', -0.1)),
-    ('eerie', ('w205', -0.1), 'BEAT2'),
-    ('finale', 'BEAT2', TOTAL),
+    ('chip_morning', ('w14', -0.6), ('w31', -0.1)),
+    ('chip_quirky', ('w31', -0.1), ('w63', -0.1)),
+    ('chip_quirky2', ('w63', -0.1), ('w100', -0.1)),
+    ('chip_quest', ('w100', -0.1), ('w128', -0.1)),
+    ('chip_lag', ('w128', -0.1), ('w150', -0.1)),
+    ('chip_happy', ('w150', -0.1), ('w172', -0.1)),
+    ('chip_menu', ('w172', -0.1), ('w197', -0.3)),
+    ('dark', ('w197', -0.3), ('w205', -0.1)),
+    ('eerie', ('w205', -0.1), ('w213', -0.1)),
+    ('finale', ('w213', -0.1), TOTAL),
 ]
 music = [{'mood': m, 's': round(T(a), 3), 'e': round(T(b), 3)} for m, a, b in MUSIC]
 
-HUD = {'start': T('w25'), 'end': T('gf2_confirm' if False else 'BEAT1'), 'xp': T('w97'), 'lvl2': T(('w99', 0.2)), 'coins': T('w108'),
-       'wall': T(('w127', -0.05)), 'fall': T('w144'), 'load': T(('w162', -0.1)), 'lag0': T('w130'), 'lag1': T('I5')}
+HUD = {'start': T('w25'), 'end': T('w197'), 'xp': T('w97'), 'lvl2': T(('w99', 0.2)), 'coins': T('w108'),
+       'wall': T(('w127', -0.05)), 'fall': T('w144'), 'load': T(('w162', -0.1)), 'lag0': T('w130'), 'lag1': T('w150'),
+       'ch4': T('w128'), 'ch5': T('w150'), 'ch6': T('w172')}
+inserts['TITLE'] = {'start': T(('w13e', -0.05)), 'dur': 0}
+inserts['OUTRO'] = {'start': T(('w225', -0.1)), 'dur': 0}
 
 tl = {
     'kind': 'game', 'fps': FPS, 'total': TOTAL, 'frames': TOTAL_FRAMES, 'voiceLen': VOICE_LEN, 'voice': 'assets/voice_game/voice.mp3',
     'blocks': blocks, 'inserts': inserts, 'words': gw, 'shots': shots, 'chapters': chapters, 'subs': subs, 'cues': cues, 'music': music,
     'red': RED, 'hud': HUD, 'clockLabel': 'ВРЕМЯ В ИГРЕ', 'flashCues': ['hook_boom', 'wall_hit', 'final_hit'],
-    'title': {'small': 'ЧТО, ЕСЛИ…', 'big': 'МИР — ИГРА?', 'sub': 'НАУЧНО-ФАНТАСТИЧЕСКИЙ ЭКСПЕРИМЕНТ', 'dur': 3.5},
-    'outro': {'big': ['А ТЫ БЫ', 'НАЖАЛ?'], 'small': ['«Выйти из игры»…', 'или остаться?'], 'follow': 'Подпишись — впереди новые эксперименты'},
+    'title': {'small': 'ЧТО, ЕСЛИ…', 'big': 'МИР — ИГРА?', 'sub': 'НАУЧНО-ФАНТАСТИЧЕСКИЙ ЭКСПЕРИМЕНТ', 'dur': round(T('w14') - T(('w13e', -0.05)) - 0.1, 3), 'fast': True},
+    'outro': {'big': ['А ТЫ БЫ', 'НАЖАЛ?'], 'small': ['«Выйти из игры»…', 'или остаться?'], 'follow': 'Подпишись — впереди новые эксперименты', 'fast': True},
 }
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 json.dump(tl, open(OUT, 'w'), ensure_ascii=False, indent=1)
