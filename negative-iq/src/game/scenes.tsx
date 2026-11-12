@@ -16,7 +16,7 @@ import { Headset } from '../AvatarNiches';
 import { shotClock, W, H } from '../lib/tl';
 import { camK, ramp, lerp, rng, easeOut, easeIn, smoother, kick, clamp, pop, wobble, backOut } from '../lib/anim';
 
-const HERO = () => randomLook(3, { skin: '#f0c4a0', hair: '#3a2416', hairStyle: 'short', shirt: '#3f88c5' });
+export const HERO = () => randomLook(3, { skin: '#f0c4a0', hair: '#3a2416', hairStyle: 'short', shirt: '#3f88c5' });
 const MOM = () => randomLook(901, { skin: '#f2c7a5', hair: '#7a3b22', hairStyle: 'bun', shirt: '#e86f8a', skirt: true, pants: '#6a4c93' });
 const DAY = { ...LOOKS.day, top: '#4a86d6', hor: '#c8d8ee' };
 
@@ -39,7 +39,7 @@ const Exclaim: React.FC<{ pos: number[]; s?: number; color?: string }> = ({ pos,
   </group>
 );
 /** floating health bar (sprite) */
-const HPBar: React.FC<{ pos: number[]; hp?: number; s?: number }> = ({ pos, hp = 1, s = 1 }) => {
+export const HPBar: React.FC<{ pos: number[]; hp?: number; s?: number }> = ({ pos, hp = 1, s = 1 }) => {
   const tex = canvasTex('hpbar' + Math.round(hp * 10), 640, 160, (g, w, h) => {
     g.fillStyle = 'rgba(8,12,24,0.85)'; (g as any).roundRect(4, 20, w - 8, h - 40, 30); g.fill();
     g.fillStyle = '#ff2a4a'; g.beginPath(); g.moveTo(80, 128); g.bezierCurveTo(20, 90, 20, 40, 60, 40); g.bezierCurveTo(78, 40, 80, 55, 80, 60); g.bezierCurveTo(80, 55, 82, 40, 100, 40); g.bezierCurveTo(140, 40, 140, 90, 80, 128); g.fill();
