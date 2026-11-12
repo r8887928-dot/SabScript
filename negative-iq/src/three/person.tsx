@@ -90,8 +90,8 @@ export const merge = (...ps: Pose[]): Pose => Object.assign({}, ...ps);
 
 // ------------------------------------------------------------------ the character
 export const Person: React.FC<{
-  look: LookP; pose?: Pose; pos?: number[]; rotY?: number; ol?: boolean; olWidth?: number; propR?: React.ReactNode; propL?: React.ReactNode; above?: React.ReactNode; shadow?: boolean; blob?: boolean;
-}> = ({ look, pose = {}, pos = [0, 0, 0], rotY = 0, ol = true, olWidth = OL, propR, propL, above, shadow = true, blob = true }) => {
+  look: LookP; pose?: Pose; pos?: number[]; rotY?: number; ol?: boolean; olWidth?: number; onHead?: React.ReactNode; propR?: React.ReactNode; propL?: React.ReactNode; above?: React.ReactNode; shadow?: boolean; blob?: boolean;
+}> = ({ look, pose = {}, pos = [0, 0, 0], rotY = 0, ol = true, olWidth = OL, onHead, propR, propL, above, shadow = true, blob = true }) => {
   const sc = (look.scale ?? 1) * (look.kid ? 0.66 : 1);
   const o = ol ? olWidth / sc : 0;
   const skin = mat(look.skin, { r: 0.65 });
@@ -220,6 +220,7 @@ export const Person: React.FC<{
             <M g={sph(0.034, 12, 10)} m={mat(new THREE.Color(look.skin).multiplyScalar(0.9).getStyle(), { r: 0.6 })} p={[0, -0.025, 0.2]} />
             {mouth()}
             {hairEl()}
+            {onHead}
           </group>
           {above ? <group position={[0, 0.75, 0]}>{above}</group> : null}
         </group>
