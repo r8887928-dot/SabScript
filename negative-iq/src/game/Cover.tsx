@@ -96,7 +96,7 @@ export const CoverGame: React.FC = () => {
 };
 
 /** horizontal thumbnail 1280×720 (YouTube) */
-export const ThumbGame: React.FC<{ top?: string; big?: string; badge?: string }> = ({ top = 'ТЫ ПРОСНУЛСЯ', big = 'В ИГРЕ?!', badge }) => {
+export const ThumbGame: React.FC<{ top?: string; big?: string; badge?: string; bigSize?: number }> = ({ top = 'ТЫ ПРОСНУЛСЯ', big = 'В ИГРЕ?!', badge, bigSize }) => {
   const ready = useFonts();
   if (!ready) return <AbsoluteFill style={{ background: '#000' }} />;
   const cam = { pos: [0.6, 1.7, 30], look: [0, 5, -60], fov: 40 };
@@ -113,7 +113,7 @@ export const ThumbGame: React.FC<{ top?: string; big?: string; badge?: string }>
       {badge && <div style={{ position: 'absolute', left: 30, top: 30, fontFamily: TECH, fontSize: 46, color: '#111', background: '#ffd23f', padding: '6px 22px', borderRadius: 14, border: '4px solid #000', transform: 'rotate(-4deg)' }}>{badge}</div>}
       <div style={{ position: 'absolute', left: 600, right: 30, top: 70, textAlign: 'center' }}>
         <div style={{ fontFamily: FONT, fontWeight: 900, fontSize: 78, lineHeight: 1.0, color: '#fff', ...stroke(12) }}>{top}</div>
-        <div style={{ fontFamily: TECH, fontSize: big.length > 9 ? 104 : 132, lineHeight: 1.05, color: '#ffe14a', ...stroke(12), textShadow: '-6px 0 0 rgba(0,240,255,0.7), 6px 0 0 rgba(255,32,80,0.7), 0 0 40px rgba(255,43,214,0.9)' }}>{big}</div>
+        <div style={{ fontFamily: TECH, fontSize: bigSize ?? (big.length > 9 ? 104 : 132), lineHeight: 1.05, color: '#ffe14a', ...stroke(12), textShadow: '-6px 0 0 rgba(0,240,255,0.7), 6px 0 0 rgba(255,32,80,0.7), 0 0 40px rgba(255,43,214,0.9)' }}>{big}</div>
         <div style={{ marginTop: 40 }}><ExitButton size={50} /></div>
       </div>
     </AbsoluteFill>
