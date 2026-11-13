@@ -60,7 +60,7 @@ export const Subtitles: React.FC = () => {
 // ------------------------------------------------------------------ hook IQ gauge
 export const HookGauge: React.FC = () => {
   const f = useCurrentFrame();
-  if (tl.kind === 'game' || tl.kind === 'net') return null;
+  if (tl.kind === 'game' || tl.kind === 'net' || tl.kind === 'liberty') return null;
   const a = sf(tl.words[9].s) - 3, b = sf(tl.words[10].e) + 2, end = sf(tl.inserts.TITLE.start);
   if (f < a || f >= end) return null;
   const p = smoother((f - a) / (b - a));
@@ -98,6 +98,7 @@ export const HookGauge: React.FC = () => {
 export const TitleCard: React.FC = () => {
   const f = useCurrentFrame();
   const land = useLand();
+  if (!tl.inserts.TITLE) return null;
   const T = tl.title ?? { small: 'ЧТО, ЕСЛИ…', big: 'IQ < 0', sub: 'НАУЧНО-ФАНТАСТИЧЕСКИЙ ЭКСПЕРИМЕНТ', dur: tl.inserts.TITLE.dur };
   const k = T.fast ? 2.5 : 1;
   const s = sf(tl.inserts.TITLE.start), d = sf(T.dur) * k;
@@ -181,7 +182,7 @@ export const Interludes: React.FC = () => {
 export const CornerHud: React.FC = () => {
   const f = useCurrentFrame();
   const t = f / FPS;
-  if (tl.kind === 'game' || tl.kind === 'net') return null;
+  if (tl.kind === 'game' || tl.kind === 'net' || tl.kind === 'liberty') return null;
   const start = sf(tl.words[11].s);
   const end = sf(tl.inserts.OUTRO.start);
   if (f < start || f >= end) return null;
