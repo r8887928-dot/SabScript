@@ -154,7 +154,7 @@ for name, a, kind, gain in CUES:
 music = [{'mood': m, 's': round(T(a), 3), 'e': round(T(b), 3)} for m, a, b in MUSIC]
 inserts['OUTRO'] = {'start': round(TOTAL - OUTRO_HOLD, 3), 'dur': 0}
 
-tl = {'kind': 'liberty', 'version': V, 'fps': FPS, 'total': TOTAL, 'frames': TOTAL_FRAMES, 'voiceLen': VOICE_LEN, 'voice': f'assets/voice_lib/{V}_v2.mp3',
+tl = {'kind': 'liberty', 'version': V, 'fps': FPS, 'total': TOTAL, 'frames': TOTAL_FRAMES, 'voiceLen': VOICE_LEN, 'voice': 'assets/voice_vr/voice.mp3',
       'blocks': blocks, 'inserts': inserts, 'words': gw, 'shots': shots, 'chapters': [], 'subs': subs, 'cues': cues, 'music': music, 'red': [],
       'levels': {k: {'zone': v, 'start': inserts[k]['start'], 'dur': inserts[k]['dur']} for k, v in LEVEL_IN.items()},
       'flashCues': [], 'title': None, 'outro': None}
