@@ -44,7 +44,7 @@ export const CsHud: React.FC = () => {
   const bombLeft = Math.max(0, 40 - (f - T('plant1')) / 30);
   const dO = deadOurs(f), dT = deadTheirs(f);
   const aliveO = 5 - dO.length, aliveT = 5 - dT.length;
-  const low = hp <= 27;
+  const low = hp <= 27 && !won;
   const hitFlash = [T('k1') - 10, T('k2') - 6, T('hp1')].some((x) => f >= x && f < x + 6);
   // active voice
   const mic = Object.entries(tl.at as Record<string, number>).filter(([id]) => id.startsWith('M')).find(([id, t]) => { const ws = tl.words.filter((w: any) => w.line === id); const e = ws.length ? ws[ws.length - 1].e : t + 1.5; return f >= sf(t) - 2 && f < sf(e) + 8; });

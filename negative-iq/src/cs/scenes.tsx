@@ -353,7 +353,7 @@ export const CSmoke: React.FC = () => {
 export const CCar: React.FC = () => {
   const { f, dur, at } = useShot('c_car');
   const ein = at(B().enemy2_in), def = at(B().defuse0);
-  const c = camK(f, [{ f: 0, p: [7.4, 2.4, -4.6], l: [0.6, 0.8, -14], fov: 46 }, { f: dur, p: [7.0, 2.3, -5.0], l: [0.4, 0.8, -14.2], fov: 44 }]);
+  const c = camK(f, [{ f: 0, p: [7.0, 3.3, -4.8], l: [0.4, 0.7, -14.4], fov: 46 }, { f: dur, p: [6.6, 3.1, -5.3], l: [0.1, 0.7, -14.5], fov: 42 }]);
   const walking = f >= ein && f < def;
   const ep = clamp((f - ein) / Math.max(1, def - ein));
   const epos = [lerp(-6.8, -0.3, ep), 0, lerp(-15.2, -14.6, ep)];
@@ -363,7 +363,7 @@ export const CCar: React.FC = () => {
       <Cam {...c} />
       <DesertMap gate={1} />
       <BombPack pos={[0, 0, -14.75]} s={1.3} armed f={f} />
-      <SmokeCloud pos={[0, 0, -14.6]} t={1} f={f + 66} />
+      <SmokeCloud pos={[0, 0, -14.6]} t={1} f={f + 66} o={0.13} />
       {f >= ein && <Person look={enemyLook(5)} pos={epos} rotY={walking ? Math.PI / 2 : Math.PI / 2} pose={merge(walking ? walk(f * 0.3, 0.5) : kneel(), EXPR.neutral, walking ? aimPose({ armR: [1.2, 0.05, 0.4] }) : { armL: [1.0, 0.1, 0.9], armR: [1.0, 0.1, 0.9] })} onHead={<EnemyHelmet />} />}
       <Person look={HERO()} pos={[4.7, 0, -8.5]} rotY={Math.PI - 0.4} pose={merge(crouch(), EXPR.neutral, { armR: [1.1, 0.1, 0.6], armL: [1.0, -0.2, 0.7], head: [-0.1, 0, 0] })} propR={<ToyRifle />} />
     </Stage>
@@ -377,10 +377,10 @@ export const CKill: React.FC = () => {
   return (
     <Stage>
       <Lights look={DAY} center={[0, 0, -12]} size={30} frame={f} />
-      <Cam pos={[8.0 + kick(f, k, 6) * 0.05, 2.1, -6.4]} look={[1.4, 1.0, -14]} fov={44} />
+      <Cam pos={[6.9 + kick(f, k, 6) * 0.05, 2.9, -5.2]} look={[0.4, 0.9, -14.4]} fov={42} />
       <DesertMap gate={1} />
       <BombPack pos={[0, 0, -14.75]} s={1.3} armed f={f} />
-      <SmokeCloud pos={[0, 0, -14.6]} t={1} f={f + 200} />
+      <SmokeCloud pos={[0, 0, -14.6]} t={1} f={f + 200} o={0.13} />
       <Person look={HERO()} pos={[4.7, 0, -8.6]} rotY={Math.PI - 0.55} pose={merge(EXPR.grin, aimPose())} propR={<ToyRifle />} />
       <MuzzleFlash pos={muzzle} on={f >= k && f < k + 2} s={0.8} />
       <Tracer a={muzzle} b={[-0.3, 1.0, -14.6]} on={f >= k && f < k + 2} />
@@ -396,11 +396,11 @@ export const CWin: React.FC = () => {
   return (
     <Stage>
       <Lights look={DAY} center={[0, 0, -13]} size={30} frame={f} />
-      <Cam pos={[Math.sin(a) * 4.5, 1.7, -13 + Math.cos(a) * 4.5]} look={[0, 1.4, -13]} fov={44} />
+      <Cam pos={[Math.sin(a) * 5.5, 1.8, -10.5 + Math.cos(a) * 5.5]} look={[0, 1.4, -11]} fov={44} />
       <DesertMap gate={1} />
-      <SmokeCloud pos={[0, 0, -14.6]} t={1} f={f + 260} />
-      <Person look={HERO()} pos={[0, 0, -12.2]} pose={merge(EXPR.grin, { armL: [0.3, 2.45, 0.15], armR: [0.3, 2.45, 0.15], y: jump * 0.25, legL: jump * 0.3, kneeL: jump * 0.5 })} />
-      <Confetti f={f} t0={0} center={[0, 0, -12.5]} />
+      <SmokeCloud pos={[0, 0, -14.6]} t={1} f={f + 260} o={Math.max(0, 0.35 - f / 120)} />
+      <Person look={HERO()} pos={[0, 0, -11]} pose={merge(EXPR.grin, { armL: [0.3, 2.45, 0.15], armR: [0.3, 2.45, 0.15], y: jump * 0.25, legL: jump * 0.3, kneeL: jump * 0.5 })} />
+      <Confetti f={f} t0={0} center={[0, 0, -11.2]} />
     </Stage>
   );
 };

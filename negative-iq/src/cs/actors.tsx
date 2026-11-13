@@ -73,11 +73,11 @@ export const Puffs: React.FC<{ pos: number[]; t: number; n?: number; r?: number;
   return <>{pts.map(([a, d, k], i) => <sprite key={i} position={[pos[0] + Math.cos(a) * d * r * e, pos[1] + 0.2 + k * up * e, pos[2] + Math.sin(a) * d * r * e]} scale={[s * (0.6 + e), s * (0.6 + e), 1]} material={spr(col, { map: radialTex('puff', 'rgba(255,255,255,1)', 'rgba(255,255,255,0)', 0.35), t: o * (1 - t) })} />)}</>;
 };
 /** a dense smoke cloud that grows and stays */
-export const SmokeCloud: React.FC<{ pos: number[]; t: number; f: number }> = ({ pos, t, f }) => {
+export const SmokeCloud: React.FC<{ pos: number[]; t: number; f: number; o?: number }> = ({ pos, t, f, o = 0.75 }) => {
   const pts = useMemo(() => { const q = rng(19); return Array.from({ length: 40 }).map(() => [(q() - 0.5) * 2, q(), (q() - 0.5) * 2, q() * 6]); }, []);
   if (t <= 0) return null;
   const g = Math.min(1, t);
-  return <>{pts.map(([x, y, z, ph], i) => <sprite key={i} position={[pos[0] + x * 2.6 * g + Math.sin(f * 0.02 + ph) * 0.2, pos[1] + 0.4 + y * 2.6 * g, pos[2] + z * 2.6 * g]} scale={[2.4 * g + 0.4, 2.4 * g + 0.4, 1]} material={spr('#f1f5f9', { map: radialTex('puff', 'rgba(255,255,255,1)', 'rgba(255,255,255,0)', 0.35), t: 0.75 })} />)}</>;
+  return <>{pts.map(([x, y, z, ph], i) => <sprite key={i} position={[pos[0] + x * 2.6 * g + Math.sin(f * 0.02 + ph) * 0.2, pos[1] + 0.4 + y * 2.6 * g, pos[2] + z * 2.6 * g]} scale={[2.4 * g + 0.4, 2.4 * g + 0.4, 1]} material={spr('#f1f5f9', { map: radialTex('puff', 'rgba(255,255,255,1)', 'rgba(255,255,255,0)', 0.35), t: o })} />)}</>;
 };
 export const MuzzleFlash: React.FC<{ pos: number[]; on: boolean; s?: number }> = ({ pos, on, s = 0.6 }) => on ? (
   <>
