@@ -10,6 +10,7 @@ import { LongMain, LONG_FRAMES } from './long/LongMain';
 import { NetMain, NET_FRAMES } from './net/NetMain';
 import { CoverNet } from './net/Cover';
 import { LibFull, LibShort, LIB_FULL_FRAMES, LIB_SHORT_FRAMES } from './liberty/LibMain';
+import { VrMain, VR_FRAMES } from './vr/VrMain';
 import { CoverGame, ThumbGame } from './game/Cover';
 import TL_GAME from './game/timeline.json';
 import { tl, FPS, W, H } from './lib/tl';
@@ -21,6 +22,8 @@ export const RemotionRoot: React.FC = () => (
     <Composition id="NoInternet" component={NetMain} durationInFrames={NET_FRAMES} fps={FPS} width={W} height={H} defaultProps={{}} />
     <Composition id="LibertyFull" component={LibFull} durationInFrames={LIB_FULL_FRAMES} fps={FPS} width={W} height={H} defaultProps={{}} />
     <Composition id="LibertyShort" component={LibShort} durationInFrames={LIB_SHORT_FRAMES} fps={FPS} width={W} height={H} defaultProps={{}} />
+    <Composition id="VrZone" component={VrMain} durationInFrames={VR_FRAMES} fps={FPS} width={W} height={H} defaultProps={{ q: { res: 1 } }} />
+    <Composition id="VrZonePreview" component={VrMain} durationInFrames={VR_FRAMES} fps={FPS} width={W} height={H} defaultProps={{}} />
     <Composition id="CoverNet" component={CoverNet} durationInFrames={1} fps={FPS} width={1080} height={1920} defaultProps={{}} />
     <Composition id="CoverGame" component={CoverGame} durationInFrames={1} fps={FPS} width={1080} height={1920} defaultProps={{}} />
     <Composition id="ThumbGame" component={ThumbGame} durationInFrames={1} fps={FPS} width={1280} height={720} defaultProps={{}} />
