@@ -75,9 +75,9 @@ export const blaster = (col = '#22d3ee') => (
 /** dancing pose, `ph` in radians, `style` 0..2 */
 export const dance = (ph: number, style = 0): Pose => {
   const s = Math.sin(ph), c = Math.cos(ph);
-  if (style === 1) return { armL: [2.5 + s * 0.3, 0.7, 0.3], armR: [0.5 - s * 0.3, 0.6, 1.1], body: [0, s * 0.25, s * 0.08], legL: Math.max(0, s) * 0.5, kneeL: Math.max(0, s) * 0.6, bob: Math.abs(s) * 0.05, head: [0, s * 0.3, 0] };
+  if (style === 1) return { armL: [0.35, 2.4 + s * 0.2, 0.15], armR: [0.5 - s * 0.3, 0.6, 1.1], body: [0, s * 0.25, s * 0.08], legL: Math.max(0, s) * 0.5, kneeL: Math.max(0, s) * 0.6, bob: Math.abs(s) * 0.05, head: [0, s * 0.3, 0] };
   if (style === 2) return { armL: [1.1 + c * 0.5, 0.9, 0.5], armR: [1.1 - c * 0.5, 0.9, 0.5], body: [0.05, 0, s * 0.12], legR: Math.max(0, -s) * 0.5, kneeR: Math.max(0, -s) * 0.6, bob: Math.abs(c) * 0.06 };
-  return { armL: [2.7, 0.65 + s * 0.25, 0.15], armR: [2.7, 0.65 + s * 0.25, 0.15], body: [0, c * 0.2, s * 0.1], bob: Math.abs(s) * 0.07, legL: Math.max(0, c) * 0.35, kneeL: Math.max(0, c) * 0.4 };
+  return { armL: [0.3, 2.3 + s * 0.3, 0.2], armR: [0.3, 2.3 - s * 0.3, 0.2], body: [0, c * 0.2, s * 0.1], bob: Math.abs(s) * 0.07, legL: Math.max(0, c) * 0.35, kneeL: Math.max(0, c) * 0.4 };
 };
 
 // ------------------------------------------------------------------ props for the game worlds

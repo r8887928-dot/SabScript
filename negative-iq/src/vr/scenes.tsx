@@ -130,7 +130,7 @@ const SKY = { ...LOOKS.morning, top: '#3b82f6', hor: '#f9a8d4', bot: '#a78bfa', 
 export const VVirtual: React.FC = () => {
   const { f, dur } = useShot('v_virtual');
   const c = camK(f, [{ f: 0, p: [1.6, 1.7, 2.8], l: [0, 1.35, 0], fov: 42 }, { f: dur, p: [3.4, 2.6, 5.4], l: [0, 1.2, -2], fov: 50 }]);
-  const pose = merge(idle(f, 2), EXPR.grin, { armL: [2.6, 0.75, 0.2], armR: [2.6, 0.75, 0.2] });
+  const pose = merge(idle(f, 2), EXPR.grin, { armL: [0.25, 2.5, 0.1], armR: [0.25, 2.5, 0.1] });
   return (
     <Stage>
       <Lights look={SKY} center={[0, 1, 0]} size={12} frame={f} />
@@ -441,7 +441,7 @@ export const VFeatures: React.FC = () => {
 export const VFriends: React.FC = () => {
   const { f, dur } = useShot('v_friends');
   const jump = Math.abs(Math.sin(f * 0.2));
-  const ppl = [0, 2, 4, 5].map((li, i) => ({ look: VR_LOOKS[li], pos: [(i - 1.5) * 0.8, 0, -0.4], rotY: (1.5 - i) * 0.25, pose: merge(EXPR.grin, { armL: [2.7, 0.8, 0.15], armR: [2.7, 0.8, 0.15], y: jump * 0.15 * ((i % 2) ? 1 : 0.6), legL: jump * 0.3, kneeL: jump * 0.5 }) }));
+  const ppl = [0, 2, 4, 5].map((li, i) => ({ look: VR_LOOKS[li], pos: [(i - 1.5) * 1.05, 0, -0.4], rotY: (1.5 - i) * 0.25, pose: merge(EXPR.grin, { armL: [0.3, 2.45, 0.15], armR: [0.3, 2.45, 0.15], y: jump * 0.15 * ((i % 2) ? 1 : 0.6), legL: jump * 0.3, kneeL: jump * 0.5 }) }));
   const c = camK(f, [{ f: 0, p: [0, 1.4, 3.6], l: [0, 1.4, -0.4], fov: 46 }, { f: dur, p: [0.5, 1.3, 3.0], l: [0, 1.45, -0.4], fov: 44 }]);
   return (
     <Stage>
