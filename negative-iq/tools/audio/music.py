@@ -517,3 +517,55 @@ def m_chip_menu(d, seed=27):
 MOODS.update({'chip_hook': m_chip_hook, 'chip_morning': m_chip_morning, 'chip_quirky': m_chip_quirky, 'chip_quirky2': m_chip_quirky2, 'chip_quest': m_chip_quest,
               'chip_lag': m_chip_lag, 'chip_happy': m_chip_happy, 'chip_menu': m_chip_menu})
 LEVEL.update({'chip_hook': 0.6, 'chip_morning': 0.52, 'chip_quirky': 0.55, 'chip_quirky2': 0.5, 'chip_quest': 0.52, 'chip_lag': 0.55, 'chip_happy': 0.5, 'chip_menu': 0.7})
+
+
+# ================================================================== EDM moods (Liberty ad)
+def _edm(d, seed=30, kick_on=True, saw=False, arp_on=True):
+    T = Track(d)
+    bpm = 124
+    b = 60 / bpm
+    nb = int(d / b) + 1
+    prog = [['F3', 'Ab3', 'C4'], ['Db3', 'F3', 'Ab3'], ['Ab3', 'C4', 'Eb4'], ['Eb3', 'G3', 'Bb3']]
+    bassn = ['F1', 'Db1', 'Ab1', 'Eb1']
+    for k in range(int(np.ceil(d / (4 * b)))):
+        ch = [n2m(x) for x in prog[k % 4]]
+        t0 = k * 4 * b
+        T.add(pad([c + 12 for c in ch] + ([ch[0]] if saw else []), 4 * b * 0.98, bright=2600 if saw else 1300, att=0.02 if saw else 0.4, rel=0.25, seed=seed + k), t0, 0.32 if saw else 0.22)
+        if kick_on:
+            for q in range(8):
+                T.add(bass(n2m(bassn[k % 4]), b / 2 * 0.7, 'saw', 520), t0 + q * b / 2, 0.48 if q % 2 else 0.22)
+        if arp_on:
+            arp = [ch[0] + 24, ch[1] + 24, ch[2] + 24, ch[1] + 24]
+            for q in range(16):
+                T.add(pluck(arp[q % 4], b / 4 * 0.9, 0.75, seed + q), t0 + q * b / 4, 0.16, -0.35 + 0.7 * ((q % 4) / 3))
+    for i in range(nb):
+        if kick_on:
+            T.add(kick(0.35, 150, 45), i * b, 0.9)
+            if i % 2 == 1:
+                T.add(clap(i), i * b, 0.32)
+        T.add(hat(0.04, i), i * b + b / 2, 0.24 if kick_on else 0.1)
+    y = T.out(1.3, 0.18)
+    if kick_on:
+        t = np.arange(y.shape[1]) / SR
+        y = y * (0.55 + 0.45 * np.clip(((t % b) / b) * 3, 0, 1))
+    return y * (0.9 / (np.abs(y).max() + 1e-9))
+
+
+def m_edm_build(d, seed=31):
+    y = _edm(d, seed, kick_on=False, saw=False, arp_on=True)
+    n = y.shape[1]
+    rise = lp(noise(d, seed, 'white'), 6000)[:n] * np.linspace(0, 1, n) ** 2 * 0.08
+    y = y + np.stack([rise, rise]) * 4
+    return y * (0.7 / (np.abs(y).max() + 1e-9))
+
+
+def m_edm(d, seed=32):
+    return _edm(d, seed, kick_on=True, saw=False)
+
+
+def m_edm_big(d, seed=33):
+    return _edm(d, seed, kick_on=True, saw=True)
+
+
+MOODS.update({'edm_build': m_edm_build, 'edm': m_edm, 'edm_big': m_edm_big})
+LEVEL.update({'edm_build': 0.6, 'edm': 0.55, 'edm_big': 0.55})

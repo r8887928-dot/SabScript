@@ -151,7 +151,7 @@ BED_NET = {
     'space': ['nh1_earth', 'title', 'n3_gps', 'n7_possible', 'n7_cables', 'n7_sun', 'n7_today', 'n9_moon'],
     'studio': ['nh4_tease', 'n7_anchor', 'n7_outage', 'n9_cta'],
 }
-BED = BED_LONG if tl.get('long') else BED_GAME if GAME else BED_NET if tl.get('kind') == 'net' else BED_IQ
+BED = BED_LONG if tl.get('long') else BED_GAME if GAME else BED_NET if tl.get('kind') == 'net' else {} if tl.get('kind') == 'liberty' else BED_IQ
 LV = {'city': -21, 'room': -30, 'chaos': -21, 'wind': -22, 'space': -26, 'studio': -32}
 
 
