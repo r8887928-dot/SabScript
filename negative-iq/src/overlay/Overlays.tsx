@@ -60,7 +60,7 @@ export const Subtitles: React.FC = () => {
 // ------------------------------------------------------------------ hook IQ gauge
 export const HookGauge: React.FC = () => {
   const f = useCurrentFrame();
-  if (tl.kind === 'game') return null;
+  if (tl.kind === 'game' || tl.kind === 'net') return null;
   const a = sf(tl.words[9].s) - 3, b = sf(tl.words[10].e) + 2, end = sf(tl.inserts.TITLE.start);
   if (f < a || f >= end) return null;
   const p = smoother((f - a) / (b - a));
@@ -109,10 +109,10 @@ export const TitleCard: React.FC = () => {
   return (
     <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', opacity: out }}>
       <div style={{ position: 'absolute', top: 560, width: '100%', textAlign: 'center', transform: `translateX(${g}px)` }}>
-        <div style={{ fontFamily: FONT, fontWeight: 900, fontSize: 92, color: '#fff', ...stroke(12), transform: `scale(${p1})`, letterSpacing: 4 }}>{T.small}</div>
+        <div style={{ fontFamily: FONT, fontWeight: 900, fontSize: T.smallSize ?? 92, color: '#fff', ...stroke(12), transform: `scale(${p1})`, letterSpacing: 4 }}>{T.small}</div>
         <div style={{ position: 'relative', height: 330, marginTop: 10 }}>
           {[['#00f0ff', -8, 0.7], ['#ff2050', 8, 0.7], ['#ffffff', 0, 1]].map(([c, dx, o]: any, i) => (
-            <div key={i} style={{ position: 'absolute', left: land ? -400 : 0, right: land ? -400 : 0, whiteSpace: land ? 'nowrap' : undefined, fontFamily: TECH, fontSize: T.big.length > 7 ? (land ? 200 : 190) : 300, lineHeight: 1.05, color: c, opacity: o, mixBlendMode: i < 2 ? 'screen' : 'normal', transform: `translateX(${dx * (l < 14 ? 3 : 1) + (i < 2 ? Math.sin(l * 1.3 + i) * 4 : 0)}px) scale(${p2})`, ...(i === 2 ? stroke(16) : {}), textShadow: i === 2 ? (tl.kind === 'game' ? '0 0 60px rgba(255,43,214,0.9)' : '0 0 60px rgba(255,40,60,0.9)') : 'none' }}>{T.big}</div>
+            <div key={i} style={{ position: 'absolute', left: land ? -400 : 0, right: land ? -400 : 0, whiteSpace: land ? 'nowrap' : undefined, fontFamily: TECH, fontSize: T.size ?? (T.big.length > 7 ? (land ? 200 : 190) : 300), lineHeight: 1.05, color: c, opacity: o, mixBlendMode: i < 2 ? 'screen' : 'normal', transform: `translateX(${dx * (l < 14 ? 3 : 1) + (i < 2 ? Math.sin(l * 1.3 + i) * 4 : 0)}px) scale(${p2})`, ...(i === 2 ? stroke(16) : {}), textShadow: i === 2 ? (tl.kind === 'game' ? '0 0 60px rgba(255,43,214,0.9)' : tl.kind === 'net' ? '0 0 60px rgba(33,240,255,0.9)' : '0 0 60px rgba(255,40,60,0.9)') : 'none' }}>{T.big}</div>
           ))}
         </div>
         <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 46, color: '#ffe14a', ...stroke(8), opacity: p3, transform: `translateY(${(1 - p3) * 30}px)`, letterSpacing: 6 }}>{T.sub}</div>
@@ -181,7 +181,7 @@ export const Interludes: React.FC = () => {
 export const CornerHud: React.FC = () => {
   const f = useCurrentFrame();
   const t = f / FPS;
-  if (tl.kind === 'game') return null;
+  if (tl.kind === 'game' || tl.kind === 'net') return null;
   const start = sf(tl.words[11].s);
   const end = sf(tl.inserts.OUTRO.start);
   if (f < start || f >= end) return null;

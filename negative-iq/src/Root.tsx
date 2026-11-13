@@ -7,6 +7,7 @@ import { BannerGaming } from './Banner';
 import { ChannelAvatar, ChannelWatermark, ChannelBanner } from './Channel';
 import { GameMain } from './game/GameMain';
 import { LongMain, LONG_FRAMES } from './long/LongMain';
+import { NetMain, NET_FRAMES } from './net/NetMain';
 import { CoverGame, ThumbGame } from './game/Cover';
 import TL_GAME from './game/timeline.json';
 import { tl, FPS, W, H } from './lib/tl';
@@ -15,6 +16,7 @@ export const RemotionRoot: React.FC = () => (
     <Composition id="NegativeIQ" component={Main} durationInFrames={tl.frames} fps={FPS} width={W} height={H} defaultProps={{}} />
     <Composition id="GameWorld" component={GameMain} durationInFrames={TL_GAME.frames} fps={FPS} width={W} height={H} defaultProps={{}} />
     <Composition id="GameWorldLong" component={LongMain} durationInFrames={LONG_FRAMES} fps={FPS} width={1920} height={1080} defaultProps={{}} />
+    <Composition id="NoInternet" component={NetMain} durationInFrames={NET_FRAMES} fps={FPS} width={W} height={H} defaultProps={{}} />
     <Composition id="CoverGame" component={CoverGame} durationInFrames={1} fps={FPS} width={1080} height={1920} defaultProps={{}} />
     <Composition id="ThumbGame" component={ThumbGame} durationInFrames={1} fps={FPS} width={1280} height={720} defaultProps={{}} />
     <Composition id="ThumbGameLong" component={ThumbGame} durationInFrames={1} fps={FPS} width={1280} height={720} defaultProps={{ top: 'ЧТО, ЕСЛИ', big: 'МИР\u00a0— ИГРА?', badge: 'УРОВЕНЬ 1', bigSize: 132 }} />

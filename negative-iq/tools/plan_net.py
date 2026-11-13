@@ -267,7 +267,7 @@ tl = {
     'kind': 'net', 'fps': FPS, 'total': TOTAL, 'frames': TOTAL_FRAMES, 'voiceLen': VOICE_LEN, 'voice': 'assets/voice_net/voice.mp3',
     'blocks': blocks, 'inserts': inserts, 'words': gw, 'shots': shots, 'chapters': chapters, 'subs': subs, 'cues': cues, 'music': music,
     'red': RED, 'hud': HUD, 'clockLabel': 'БЕЗ ИНТЕРНЕТА', 'flashCues': ['world_boom', 'title_hit', 'sun_boom', 'lo_crash'],
-    'title': {'small': 'ЧТО, ЕСЛИ…', 'big': 'НЕТ ИНТЕРНЕТА?', 'sub': 'НА ВСЕЙ ЗЕМЛЕ · СРАЗУ', 'dur': inserts['TITLE']['dur'], 'fast': True},
+    'title': {'small': 'ЧТО, ЕСЛИ ПРОПАДЁТ', 'smallSize': 72, 'big': 'ИНТЕРНЕТ?', 'size': 158, 'sub': 'НА ВСЕЙ ЗЕМЛЕ · СРАЗУ', 'dur': inserts['TITLE']['dur'], 'fast': True},
     'outro': None,
 }
 os.makedirs(os.path.dirname(OUT), exist_ok=True)

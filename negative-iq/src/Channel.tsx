@@ -66,7 +66,7 @@ function gridBg(W: number, H: number, hz: number, seed = 5, mtn = false) {
 }
 
 /** lab goggles pushed up on the forehead (head-centre coordinates) */
-const Goggles: React.FC = () => {
+export const Goggles: React.FC = () => {
   const rubber = mat('#1c1c26', { r: 0.5 });
   const rim = mat(MAG, { r: 0.35, m: 0.2 });
   const glass = useMemo(() => new THREE.MeshStandardMaterial({ color: '#8ff8ff', transparent: true, opacity: 0.8, roughness: 0.08, metalness: 0.2, emissive: new THREE.Color(CYAN), emissiveIntensity: 1.1 }), []);
@@ -88,7 +88,7 @@ const Goggles: React.FC = () => {
   );
 };
 
-const heroPose = (extra = {}) => merge(EXPR.happy, { brows: [0.3, -0.06, 0.004], eyeA: [0, 0.002], eyeB: [0, 0.002], head: [0.03, -0.1, 0.07], body: [0.02, 0.08, 0], armL: [0.05, 0.12, 0.15], armR: [0.05, 0.12, 0.15], blink: 0, ...extra });
+export const heroPose = (extra = {}) => merge(EXPR.happy, { brows: [0.3, -0.06, 0.004], eyeA: [0, 0.002], eyeB: [0, 0.002], head: [0.03, -0.1, 0.07], body: [0.02, 0.08, 0], armL: [0.05, 0.12, 0.15], armR: [0.05, 0.12, 0.15], blink: 0, ...extra });
 
 const HeroRig: React.FC<{ pose: any; cam: { pos: number[]; look: number[]; fov: number } }> = ({ pose, cam }) => (
   <>
