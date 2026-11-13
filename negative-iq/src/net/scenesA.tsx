@@ -74,20 +74,44 @@ const phoneChat = (f: number, stuck: number) => (g: CanvasRenderingContext2D, w:
   g.fillStyle = '#eef0f5'; g.fillRect(0, h - 90, w, 90); g.fillStyle = '#fff'; (g as any).roundRect(20, h - 74, w - 120, 56, 28); g.fill();
 };
 
+/** first-person view: the phone in your hands */
+const LivingRoom: React.FC = () => (
+  <>
+    <group position={[0, 0, 0.5]}><Room w={6} d={7} h={3} wall="#d8e4f0" floor="wood" windows="back" light={0.9} /></group>
+    <mesh geometry={rbox(2.4, 0.5, 0.9, 0.12)} position={[0, 0.25, -2.6]} material={mat('#5a6fa8', { r: 0.9 })} castShadow receiveShadow />
+    <mesh geometry={rbox(2.4, 0.8, 0.25, 0.1)} position={[0, 0.7, -3.0]} material={mat('#4d5f95', { r: 0.9 })} castShadow />
+    <Lamp pos={[1.9, 0, -2.4]} on={0.6} />
+  </>
+);
+const PhonePOV: React.FC<{ f: number; tex: THREE.Texture; outdoor?: boolean }> = ({ f, tex, outdoor }) => {
+  const skin = mat('#d9a27c', { r: 0.7 });
+  const sway = Math.sin(f * 0.05) * 0.004;
+  return (
+    <>
+      {outdoor ? <group position={[-30, 0, -40]}><City seed={9} near={2} far={4} clear={[[30, 40, 16]]} /></group> : <LivingRoom />}
+      <group position={[sway, 1.32, 0]} rotation={[-0.22, 0, 0]}>
+        <Phone tex={tex} />
+        {[-1, 1].map((sd) => (
+          <group key={sd}>
+            <mesh position={[sd * 0.056, -0.07, -0.012]} rotation={[0.2, 0, sd * 0.35]} material={skin}><capsuleGeometry args={[0.017, 0.06, 6, 12]} /></mesh>
+          </group>
+        ))}
+        <mesh position={[0.038, -0.075, 0.01]} rotation={[0, 0, 0.9]} material={skin}><capsuleGeometry args={[0.009, 0.035, 6, 10]} /></mesh>
+      </group>
+    </>
+  );
+};
+const POV = (f: number, d: number, z0 = 0.5, z1 = 0.42) => camK(f, [{ f: 0, p: [0, 1.44, z0], l: [0, 1.3, 0], fov: 38 }, { f: d, p: [0, 1.42, z1], l: [0, 1.3, 0], fov: 38 }]);
+
 /** hero holding a phone, seen over his shoulder (or from the front) */
 const PhoneSet: React.FC<{ f: number; tex: THREE.Texture; front?: boolean; outdoor?: boolean }> = ({ f, tex, front, outdoor }) => (
   <>
-    {outdoor ? <group position={[-30, 0, -40]}><City seed={9} near={2} far={4} /></group>
-      : <group position={[0, 0, 0.5]}><Room w={6} d={7} h={3} wall="#d8e4f0" floor="wood" windows="back" light={0.9} /></group>}
-    {!outdoor && <>
-      <mesh geometry={rbox(2.4, 0.5, 0.9, 0.12)} position={[0, 0.25, -2.6]} material={mat('#5a6fa8', { r: 0.9 })} castShadow receiveShadow />
-      <mesh geometry={rbox(2.4, 0.8, 0.25, 0.1)} position={[0, 0.7, -3.0]} material={mat('#4d5f95', { r: 0.9 })} castShadow />
-      <Lamp pos={[1.9, 0, -2.4]} on={0.6} />
-    </>}
-    <Person look={HERO()} pos={[0, 0, 0]} rotY={front ? 0 : Math.PI} pose={merge(idle(f, 1), front ? EXPR.confused : EXPR.neutral, { armL: [1.55, -0.25, 1.45], armR: [1.35, 0.2, 1.25], head: [0.42, 0, 0] })}
+    {outdoor ? <group position={[-30, 0, -40]}><City seed={9} near={2} far={4} clear={[[30, 40, 16]]} /></group> : <LivingRoom />}
+    <Person look={HERO()} pos={[0, 0, 0]} rotY={front ? 0 : Math.PI} pose={merge(idle(f, 1), front ? EXPR.confused : EXPR.neutral, { armL: [1.15, -0.25, 1.25], armR: [0.95, 0.2, 1.05], head: [0.38, 0, 0] })}
       propL={<PhoneProp tex={tex} tilt={0.35} />} />
   </>
 );
+
 
 // ------------------------------------------------------------------ HOOK
 // «Что, если прямо сейчас на всей Земле пропадёт интернет?»
@@ -114,14 +138,14 @@ export const NH1Earth: React.FC = () => {
 export const NH2You: React.FC = () => {
   const f = useCurrentFrame();
   const tex = useScreen(360, 740, 'nh2' + Math.floor(f / 2), phoneVideo(f + 200, 0));
-  const c = camK(f, [{ f: 0, p: [0.35, 1.62, 1.25], l: [0, 1.5, 0], fov: 34 }, { f: 30, p: [0.28, 1.6, 1.0], l: [0, 1.52, 0], fov: 34 }]);
+  const c = camK(f, [{ f: 0, p: [0.55, 1.55, 2.5], l: [0, 1.5, 0], fov: 38 }, { f: 30, p: [0.45, 1.55, 2.2], l: [0, 1.52, 0], fov: 38 }]);
   return (
     <Stage>
       <Lights look={LOOKS.interior} center={[0, 1, 0]} size={6} noSky />
       <Cam {...c} />
       <PhoneSet f={f} tex={tex} front />
       <pointLight position={[0.05, 1.35, 0.45]} intensity={2.5} distance={1.2} color="#9fc8ff" />
-      <NoWifiSprite pos={[0.36, 2.0, 0.1]} s={0.34 * pop(f, 3, 7)} />
+      <NoWifiSprite pos={[0.3, 2.08, 0.1]} s={0.4 * pop(f, 3, 7)} />
     </Stage>
   );
 };
@@ -233,12 +257,12 @@ export const N1Freeze: React.FC = () => {
   const k = shotClock('n1_freeze');
   const fr = k.cue('freeze_tape');
   const tex = useScreen(360, 740, 'n1f' + Math.floor(f / 2) + (f >= fr), phoneVideo(f, fr));
-  const c = camK(f, [{ f: 0, p: [0.05, 1.86, 0.22], l: [0.18, 1.27, -0.36], fov: 36 }, { f: k.dur, p: [0.08, 1.76, 0.08], l: [0.18, 1.27, -0.36], fov: 34 }]);
+  const c = POV(f, k.dur);
   return (
     <Stage>
       <Lights look={LOOKS.interior} center={[0, 1, 0]} size={6} noSky />
       <Cam {...c} />
-      <PhoneSet f={f} tex={tex} />
+      <PhonePOV f={f} tex={tex} />
     </Stage>
   );
 };
@@ -248,12 +272,12 @@ export const N1Send: React.FC = () => {
   const k = shotClock('n1_send');
   const st = k.cue('send_tick');
   const tex = useScreen(360, 740, 'n1s' + Math.floor(f / 3) + (f >= st), phoneChat(f, st));
-  const c = camK(f, [{ f: 0, p: [0.32, 1.84, 0.18], l: [0.18, 1.27, -0.36], fov: 34 }, { f: k.dur, p: [0.26, 1.76, 0.06], l: [0.18, 1.27, -0.36], fov: 32 }]);
+  const c = POV(f, k.dur, 0.44, 0.36);
   return (
     <Stage>
       <Lights look={LOOKS.interior} center={[0, 1, 0]} size={6} noSky />
       <Cam {...c} />
-      <PhoneSet f={f} tex={tex} />
+      <PhonePOV f={f} tex={tex} />
     </Stage>
   );
 };
@@ -284,7 +308,7 @@ export const N1Game: React.FC = () => {
   const k = shotClock('n1_game');
   const lost = k.cue('game_err');
   const tex = useScreen(1024, 576, 'n1g' + Math.floor(f / 2) + (f >= lost), gameScreen(f, lost));
-  const c = camK(f, [{ f: 0, p: [0.9, 1.6, 1.6], l: [0, 1.2, -0.6], fov: 44 }, { f: lost, p: [0.45, 1.5, 0.9], l: [0, 1.2, -0.6], fov: 42 }, { f: k.dur, p: [0.3, 1.4, 0.55], l: [0, 1.22, -0.6], fov: 40 }]);
+  const c = camK(f, [{ f: 0, p: [0.85, 1.85, 2.3], l: [0, 1.15, -0.95], fov: 42 }, { f: lost, p: [0.75, 1.75, 1.75], l: [0, 1.18, -0.95], fov: 40 }, { f: k.dur, p: [0.7, 1.6, 1.25], l: [0, 1.2, -0.95], fov: 38 }]);
   return (
     <Stage>
       <Lights look={{ ...LOOKS.studio, sunI: 0.6, hemiI: 0.5 }} center={[0, 1, 0]} size={6} noSky noFog />
@@ -331,7 +355,7 @@ export const N2Router: React.FC = () => {
   const click = k.cue('router_click'), fail = k.cue('router_fail');
   const state = f < click ? 'fail' : f < click + 8 ? 'off' : f < fail ? 'boot' : 'fail';
   const plugOut = f >= click - 4 && f < click + 10 ? 0.12 : 0;
-  const c = camK(f, [{ f: 0, p: [0.7, 1.25, 0.9], l: [0, 0.95, 0], fov: 38 }, { f: k.dur, p: [-0.45, 1.15, 0.75], l: [0, 0.95, 0], fov: 34 }]);
+  const c = camK(f, [{ f: 0, p: [0.8, 1.5, 2.0], l: [0, 1.0, 0], fov: 36 }, { f: k.dur, p: [-0.5, 1.35, 1.7], l: [0, 1.0, 0], fov: 34 }]);
   return (
     <Stage>
       <Lights look={LOOKS.interior} center={[0, 1, 0]} size={4} noSky />
@@ -355,7 +379,7 @@ const Corridor: React.FC<{ open: number }> = ({ open }) => (
     <mesh position={[-2, 1.4, 4]} rotation={[0, Math.PI / 2, 0]} material={mat('#cbbd9f', { r: 0.9 })}><planeGeometry args={[14, 2.8]} /></mesh>
     <mesh position={[0, 2.8, 4]} rotation={[Math.PI / 2, 0, 0]} material={mat('#efe9dd', { r: 0.9 })}><planeGeometry args={[4, 14]} /></mesh>
     <mesh position={[0, 1.05, -0.94]} material={mat('#4a3324', { r: 0.6 })}><boxGeometry args={[1.05, 2.15, 0.04]} /></mesh>
-    <group position={[-0.47, 1.0, -0.9]} rotation={[0, -open * 1.6, 0]}>
+    <group position={[-0.47, 1.0, -0.9]} rotation={[0, open * 1.6, 0]}>
       <mesh position={[0.47, 0, 0]} material={mat('#7b4a2c', { r: 0.6 })} castShadow><boxGeometry args={[0.94, 2.0, 0.05]} /></mesh>
       <mesh position={[0.85, 0, 0.05]} material={mat('#d4af37', { r: 0.3, m: 0.9 })}><sphereGeometry args={[0.04, 12, 8]} /></mesh>
       <mesh position={[0.47, 0.62, 0.03]} material={mat('#d4af37', { r: 0.3, m: 0.9 })}><boxGeometry args={[0.16, 0.08, 0.01]} /></mesh>
@@ -369,9 +393,9 @@ export const N2Door: React.FC = () => {
   const f = useCurrentFrame();
   const k = shotClock('n2_door');
   const kn = k.cue('knock');
-  const wp = walkPath(f, [0.6, 3.5], [0.15, 0.05], 1.6, 0);
+  const wp = walkPath(f, [0.35, 1.7], [0.2, 0.1], 1.2, 0);
   const knockArm = f >= kn - 6 && f < kn + 14 ? 1.75 + Math.sin((f - kn) * 1.4) * 0.25 : 0.1;
-  const c = camK(f, [{ f: 0, p: [1.6, 1.6, 2.4], l: [0.1, 1.2, -0.6], fov: 46 }, { f: k.dur, p: [1.3, 1.55, 1.3], l: [0, 1.25, -0.8], fov: 44 }]);
+  const c = camK(f, [{ f: 0, p: [1.1, 1.7, 3.6], l: [0.15, 1.1, -0.3], fov: 44 }, { f: k.dur, p: [1.0, 1.65, 2.9], l: [0.1, 1.15, -0.5], fov: 42 }]);
   return (
     <Stage>
       <Lights look={LOOKS.interior} center={[0, 1, 0]} size={6} noSky />
@@ -388,15 +412,15 @@ export const N2Neighbor: React.FC = () => {
   const sp = k.cue('neighbor_spin');
   const tex = useScreen(180, 370, 'spinph' + (Math.floor(f / 2) % 10), (g, w, h) => { g.fillStyle = '#f2f4f8'; g.fillRect(0, 0, w, h); spinner(g, w / 2, h / 2, 26, Math.floor(f / 2) * 2); });
   const open = ramp(f, 0, 16);
-  const c = camK(f, [{ f: 0, p: [0.55, 1.75, 1.7], l: [-0.05, 1.45, -1.4], fov: 42 }, { f: sp - 4, p: [0.4, 1.7, 1.2], l: [-0.05, 1.5, -1.4], fov: 40 }, { f: k.dur, p: [0.25, 1.62, 0.55], l: [-0.08, 1.45, -1.4], fov: 34 }]);
+  const c = camK(f, [{ f: 0, p: [-0.7, 1.65, 1.9], l: [-0.05, 1.4, -0.9], fov: 44 }, { f: sp - 4, p: [-0.6, 1.65, 1.5], l: [-0.05, 1.45, -0.9], fov: 42 }, { f: k.dur, p: [-0.45, 1.62, 0.95], l: [-0.05, 1.5, -0.9], fov: 40 }]);
   return (
     <Stage>
       <Lights look={LOOKS.interior} center={[0, 1, 0]} size={6} noSky />
       <Cam {...c} />
       <Corridor open={open} />
-      <Person look={HERO()} pos={[0.2, 0, 0.15]} rotY={Math.PI} pose={merge(idle(f, 2), EXPR.neutral)} />
-      <Person look={NEIGHBOR()} pos={[-0.05, 0, -1.45]} rotY={0} pose={merge(idle(f, 5), f >= sp ? EXPR.sad : EXPR.neutral, { armL: [1.5, -0.2, 1.4], head: [0.15, 0, 0] })} propL={<PhoneProp tex={tex} tilt={-0.9} />} />
-      <SpinnerSprite pos={[-0.05, 2.25, -1.45]} s={0.4 * pop(f, sp, 8)} f={f / 2} />
+      <Person look={HERO()} pos={[0.6, 0, -0.2]} rotY={Math.PI + 0.45} pose={merge(idle(f, 2), EXPR.neutral)} />
+      <Person look={NEIGHBOR()} pos={[-0.05, 0, -1.0]} rotY={0} pose={merge(idle(f, 5), f >= sp ? EXPR.sad : EXPR.neutral, { armL: [1.3, -0.2, 0.4], head: [0.1, 0, 0] })} propL={<group rotation={[-1.7, Math.PI, 0]} position={[0, -0.04, 0.03]}><Phone tex={tex} s={1.2} /></group>} />
+      <SpinnerSprite pos={[-0.05, 2.25, -1.0]} s={0.4 * pop(f, sp, 8)} f={f / 2} />
     </Stage>
   );
 };
@@ -418,7 +442,7 @@ export const N3Terminal: React.FC = () => {
   const err = k.cue('term_err');
   const tex = useScreen(384, 288, 'term' + Math.floor(f / 2) + (f >= err), terminalScreen(f, err));
   const cardZ = lerp(0.5, 0.18, smoother(ramp(f, 0, 24)));
-  const c = camK(f, [{ f: 0, p: [0.25, 1.4, 0.6], l: [0, 1.0, 0], fov: 38 }, { f: k.dur, p: [0.12, 1.25, 0.42], l: [0, 1.0, 0], fov: 34 }]);
+  const c = camK(f, [{ f: 0, p: [0.3, 1.55, 0.95], l: [0, 1.0, 0], fov: 38 }, { f: k.dur, p: [0.15, 1.4, 0.7], l: [0, 1.02, 0], fov: 36 }]);
   return (
     <Stage>
       <Lights look={LOOKS.interior} center={[0, 1, 0]} size={4} noSky />
@@ -432,7 +456,7 @@ export const N3Terminal: React.FC = () => {
         <Screen tex={tex} w={0.16} h={0.12} pos={[0, 0.23, 0.031]} frame="#111" depth={0.005} />
         {Array.from({ length: 9 }).map((_, i) => <mesh key={i} position={[-0.05 + (i % 3) * 0.05, 0.12 - Math.floor(i / 3) * 0.035, 0.032]} material={mat('#b2bec3', { r: 0.5 })}><boxGeometry args={[0.036, 0.024, 0.006]} /></mesh>)}
       </group>
-      <mesh position={[0.02, 1.13, cardZ]} rotation={[-0.5, 0, 0.15]} material={mat('#2e86de', { r: 0.3, m: 0.4 })}><boxGeometry args={[0.085, 0.054, 0.002]} /></mesh>
+      <mesh position={[0.15, 1.05, cardZ]} rotation={[-0.5, 0, 0.35]} material={mat('#2e86de', { r: 0.3, m: 0.4 })}><boxGeometry args={[0.085, 0.054, 0.002]} /></mesh>
       {f >= err && <Glow pos={[0, 1.12, 0.06]} s={0.5} color="#ff3b3b" o={0.7} />}
     </Stage>
   );
@@ -490,7 +514,7 @@ export const N3GPS: React.FC = () => {
   const ok = k.cue('gps_shimmer');
   const a = f * 0.004;
   const sat = [Math.sin(a) * 4 + 3, 14, Math.cos(a) * 3 + 6];
-  const c = camK(f, [{ f: 0, p: [10, 18, 22], l: [3, 9, 4], fov: 44 }, { f: k.dur, p: [14, 15, 18], l: [3, 9, 5], fov: 46 }]);
+  const c = camK(f, [{ f: 0, p: [12, 19, 26], l: [4, 11, 6], fov: 46 }, { f: k.dur, p: [15, 17, 24], l: [4, 11, 6], fov: 46 }]);
   return (
     <Stage>
       <Lights look={LOOKS.space} shadow={false} noSky noFog />
@@ -520,12 +544,12 @@ export const N3Map: React.FC = () => {
   const k = shotClock('n3_map');
   const tex = useScreen(360, 740, 'map' + Math.floor(f / 2), mapScreen(f));
   const z = k.w(128) - 4;
-  const c = camK(f, [{ f: 0, p: [0.05, 1.86, 0.22], l: [0.18, 1.27, -0.36], fov: 38 }, { f: z, p: [0.08, 1.76, 0.06], l: [0.18, 1.27, -0.36], fov: 34 }, { f: k.dur, p: [0.12, 1.62, -0.1], l: [0.18, 1.27, -0.36], fov: 30 }]);
+  const c = camK(f, [{ f: 0, p: [0, 1.46, 0.52], l: [0, 1.3, 0], fov: 38 }, { f: z, p: [0, 1.43, 0.4], l: [0, 1.3, 0], fov: 38 }, { f: k.dur, p: [0, 1.38, 0.3], l: [0, 1.3, 0], fov: 38 }]);
   return (
     <Stage>
       <Lights look={LOOKS.day} center={[0, 1, 0]} size={8} frame={f} />
       <Cam {...c} />
-      <PhoneSet f={f} tex={tex} outdoor />
+      <PhonePOV f={f} tex={tex} outdoor />
     </Stage>
   );
 };
@@ -567,7 +591,7 @@ export const N4News: React.FC = () => {
   const f = useCurrentFrame();
   const k = shotClock('n4_news');
   const tex = useScreen(512, 384, 'news' + Math.floor(f / 2) + 'on', newsScreen(f + 60, 0));
-  const c = camK(f, [{ f: 0, p: [-1.2, 0.75, -1.4], l: [-1.65, 0.38, -2.3], fov: 40 }, { f: k.dur, p: [-1.35, 0.6, -1.65], l: [-1.65, 0.38, -2.3], fov: 38 }]);
+  const c = camK(f, [{ f: 0, p: [-0.52, 0.55, -0.25], l: [-1.524, 0.42, -2.094], fov: 36 }, { f: k.dur, p: [-0.66, 0.5, -0.5], l: [-1.524, 0.4, -2.094], fov: 36 }]);
   return (
     <Stage>
       <Lights look={{ ...LOOKS.interior, sunI: 1.0, hemiI: 0.5 }} center={[0, 1, 0]} size={6} noSky />

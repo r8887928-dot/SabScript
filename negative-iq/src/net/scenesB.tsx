@@ -61,7 +61,7 @@ export const N5Shelves: React.FC = () => {
       <group position={[-0.1, 0, -2]}>
         <mesh geometry={rbox(0.6, 0.4, 0.9, 0.03)} position={[0.4, 0.62, 0]} material={mat('#9aa5b1', { r: 0.4, m: 0.6 })} />
       </group>
-      {f > k.w(164) && <Label text="ТОВАР ЗАКОНЧИЛСЯ" pos={[1.25, 2.35, -4.2]} h={0.16} bg="rgba(214,48,49,0.95)" s={pop(f, k.w(164), 8)} />}
+      {f > k.w(164) && <Label text="ТОВАР ЗАКОНЧИЛСЯ" pos={[0.2, 2.45, -4.2]} h={0.16} bg="rgba(214,48,49,0.95)" s={pop(f, k.w(164), 8)} />}
     </Stage>
   );
 };
@@ -109,7 +109,7 @@ export const N5Ham: React.FC = () => {
     <Stage>
       <Lights look={LOOKS.dusk} center={[0, 20, 0]} size={20} frame={f} />
       <Cam {...c} />
-      <group position={[-30, 0, -40]}><City seed={7} near={2} far={6} night={0.6} lamps={0.6} /></group>
+      <group position={[-30, 0, -40]}><City seed={7} near={2} far={6} night={0.6} lamps={0.6} clear={[[30, 40, 14]]} /></group>
       <mesh position={[0, 10, -1]} material={mat('#7d6f63', { r: 0.9 })} receiveShadow castShadow><boxGeometry args={[12, 20, 10]} /></mesh>
       <mesh position={[0, 20.1, -1]} material={mat('#5d5650', { r: 0.9 })} receiveShadow><boxGeometry args={[12.2, 0.2, 10.2]} /></mesh>
       <Mast pos={[-2.2, 20.2, -2.5]} />
@@ -133,34 +133,34 @@ export const N6Wires: React.FC = () => {
   const f = useCurrentFrame();
   const k = shotClock('n6_wires');
   const w = smoother(ramp(f, 6, k.dur - 6));
-  const c = camK(f, [{ f: 0, p: [0, 5.2, 13], l: [0, 4.4, 0], fov: 50 }, { f: k.dur, p: [1.6, 4.6, 10.5], l: [0, 4.4, 0], fov: 50 }]);
+  const c = camK(f, [{ f: 0, p: [0, 5.0, 21], l: [0, 4.6, 0], fov: 50 }, { f: k.dur, p: [2.0, 4.8, 18], l: [0, 4.6, 0], fov: 50 }]);
   return (
     <Stage>
       <Lights look={LOOKS.dusk} center={[0, 4, 0]} size={20} frame={f} />
       <Cam {...c} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow material={mat('#55606b', { r: 0.9 })}><planeGeometry args={[80, 80]} /></mesh>
-      <group position={[-30, 0, -30]}><City seed={11} near={2} far={5} night={0.5} lamps={0.5} /></group>
+      <group position={[-30, 0, -30]}><City seed={11} near={2} far={5} night={0.5} lamps={0.5} clear={[[30, 30, 14]]} /></group>
       <Block f={f} wires={w} />
       <Lamp pos={[4.6, 0, 2.2]} on={0.8} />
     </Stage>
   );
 };
 // «и появляется маленький интернет на 30 квартир. Со своим чатом и своими новостями.»
-const CHAT = [['кв. 12', 'У кого есть батарейки?'], ['кв. 5', 'Завтра в 10 субботник!'], ['кв. 30', 'Нашёл бумажную карту города'], ['кв. 18', 'Кто играет в шахматы?']];
+const CHAT = [['кв. 12', 'У кого есть батарейки?'], ['кв. 5', 'Завтра субботник!'], ['кв. 30', 'Нашёл бумажную карту'], ['кв. 18', 'Кто в шахматы?']];
 export const N6Chat: React.FC = () => {
   const f = useCurrentFrame();
   const k = shotClock('n6_chat');
   const times = [k.w(199), k.w(203), k.w(207), k.w(209)];
-  const c = camK(f, [{ f: 0, p: [1.2, 4.6, 10.5], l: [0, 4.6, 0], fov: 50 }, { f: k.dur, p: [-0.6, 5.0, 12.5], l: [0, 4.8, 0], fov: 52 }]);
+  const c = camK(f, [{ f: 0, p: [0.6, 5.2, 20], l: [0, 5.2, 0], fov: 50 }, { f: k.dur, p: [-0.6, 5.3, 21.5], l: [0, 5.3, 0], fov: 50 }]);
   return (
     <Stage>
       <Lights look={LOOKS.night} center={[0, 4, 0]} size={20} frame={f} />
       <Cam {...c} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow material={mat('#3b434c', { r: 0.9 })}><planeGeometry args={[80, 80]} /></mesh>
-      <group position={[-30, 0, -30]}><City seed={11} near={2} far={5} night={1} lamps={1} /></group>
+      <group position={[-30, 0, -30]}><City seed={11} near={2} far={5} night={1} lamps={1} clear={[[30, 30, 14]]} /></group>
       <Block f={f} wires={1} />
       {CHAT.map(([a, b], i) => f >= times[i] ? (
-        <Label key={i} text={`${a}: ${b}`} pos={[[-1.8, 1.9, -1.2, 2.2][i], [7.6, 6.4, 5.0, 3.6][i], 1.0]} h={0.42} s={pop(f, times[i], 8)} bg={i % 2 ? 'rgba(60,108,240,0.95)' : 'rgba(18,0,42,0.92)'} />
+        <Label key={i} text={`${a}:\n${b}`} pos={[[0, 0.3, -0.2, 0.2][i], [8.6, 6.8, 5.0, 3.2][i], 1.0]} h={0.46} s={pop(f, times[i], 8)} bg={i % 2 ? 'rgba(60,108,240,0.95)' : 'rgba(18,0,42,0.92)'} />
       ) : null)}
     </Stage>
   );
@@ -207,7 +207,7 @@ export const N7Anchor: React.FC = () => {
   const hit = k.cue('anchor_clunk');
   const ay = f < hit ? lerp(7, 0.6, easeOut(f / hit)) : 0.6;
   const snap = f >= k.cue('anchor_spark') ? (f - k.cue('anchor_spark')) / 18 : 0;
-  const c = camK(f, [{ f: 0, p: [-3, 1.8, 6], l: [0, 1.2, 0], fov: 46 }, { f: k.dur, p: [-1.8, 1.2, 4.2], l: [0, 0.8, 0], fov: 44 }]);
+  const c = camK(f, [{ f: 0, p: [-4, 2.6, 9], l: [0, 1.6, 0], fov: 46 }, { f: k.dur, p: [-3, 1.8, 7], l: [0, 1.0, 0], fov: 44 }]);
   return (
     <Stage>
       <Lights look={SEA} center={[0, 0, 0]} size={20} frame={f} />
@@ -216,27 +216,26 @@ export const N7Anchor: React.FC = () => {
     </Stage>
   );
 };
-// «В 1859 году солнечная буря была такой сильной,»
+// «В 1859 году солнечная буря была такой сильной,» — the sun at the top, the storm pours down onto the Earth
 export const N7Sun: React.FC = () => {
   const f = useCurrentFrame();
   const k = shotClock('n7_sun');
-  const parts = useMemo(() => { const r = rng(9); return Array.from({ length: 90 }).map(() => [r(), (r() - 0.5) * 12, (r() - 0.5) * 12, 0.5 + r()]); }, []);
-  const c = camK(f, [{ f: 0, p: [-20, 4, 60], l: [-14, 0, 0], fov: 50 }, { f: k.dur, p: [8, 4, 60], l: [10, 0, 0], fov: 50 }]);
+  const parts = useMemo(() => { const r = rng(9); return Array.from({ length: 110 }).map(() => [r(), (r() - 0.5) * 26, (r() - 0.5) * 10, 0.6 + r() * 1.4]); }, []);
+  const z = lerp(96, 88, smoother(f / k.dur));
   return (
     <Stage>
       <Lights look={LOOKS.space} shadow={false} noSky noFog />
-      <Cam {...c} />
+      <Cam pos={[0, 0, z]} look={[0, 0, 0]} fov={50} />
       <StarField />
-      <mesh position={[-40, 0, -10]} material={basic('#ffb347')}><sphereGeometry args={[14, 48, 32]} /></mesh>
-      <sprite position={[-40, 0, -9]} scale={[70, 70, 1]} material={spr('#ff9f43', { map: radialTex('glow'), add: true, t: 0.9 })} />
-      <sprite position={[-28, 4, -5]} scale={[26, 12, 1]} material={spr('#ffd27a', { map: radialTex('glow'), add: true, t: 0.6 + 0.3 * Math.sin(f * 0.3) })} />
+      <mesh position={[0, 46, -10]} material={basic('#ffb347')}><sphereGeometry args={[18, 48, 32]} /></mesh>
+      <sprite position={[0, 40, -8]} scale={[90, 90, 1]} material={spr('#ff9f43', { map: radialTex('glow'), add: true, t: 0.95 })} />
+      <sprite position={[2, 27, -4]} scale={[18, 26, 1]} material={spr('#ffd27a', { map: radialTex('glow'), add: true, t: 0.6 + 0.3 * Math.sin(f * 0.3) })} />
       {parts.map((p, i) => {
-        const t = ((f / 60 + p[0]) % 1);
-        return <sprite key={i} position={[lerp(-26, 24, t), p[1] * (1 - t * 0.7), p[2] * (1 - t * 0.7)]} scale={[p[3] * 1.4, p[3] * 1.4, 1]} material={spr(i % 3 ? '#ffcf6a' : '#ff6a3c', { map: radialTex('glow'), add: true, t: 0.8 })} />;
+        const t = ((f / 55 + p[0]) % 1);
+        return <sprite key={i} position={[p[1] * (1 - t * 0.75), lerp(28, -20, t), p[2]]} scale={[p[3], p[3] * 1.6, 1]} material={spr(i % 3 ? '#ffcf6a' : '#ff6a3c', { map: radialTex('glow'), add: true, t: 0.85 })} />;
       })}
-      <Globe rot={lonRot(0) + f * 0.004} r={4} pos={[26, 0, 0]} sun={[-1, 0.1, 0.2]} night={0.8} />
-      <sprite position={[26, 4.3, 0]} scale={[7, 2.4, 1]} material={spr('#3cff9e', { map: radialTex('glow'), add: true, t: 0.5 + 0.4 * Math.sin(f * 0.5) })} />
-      <sprite position={[26, -4.3, 0]} scale={[6, 2, 1]} material={spr('#ff5ad1', { map: radialTex('glow'), add: true, t: 0.4 + 0.3 * Math.sin(f * 0.4) })} />
+      <Globe rot={lonRot(0) + f * 0.004} r={7} pos={[0, -28, 0]} sun={[0, 1, 0.3]} night={0.8} />
+      <sprite position={[0, -20.4, 1]} scale={[12, 3.5, 1]} material={spr('#3cff9e', { map: radialTex('glow'), add: true, t: 0.55 + 0.35 * Math.sin(f * 0.5) })} />
     </Stage>
   );
 };
@@ -247,7 +246,7 @@ export const N7Telegraph: React.FC = () => {
   const k = shotClock('n7_telegraph');
   const sp = k.cue('tele_spark');
   const spark = f >= sp - 4 ? clamp(1 - (f - sp - 14) / 20) * (0.6 + 0.4 * hash(f)) : 0;
-  const c = camK(f, [{ f: 0, p: [0.9, 1.35, 1.3], l: [0, 0.95, -0.2], fov: 44 }, { f: k.dur, p: [0.55, 1.2, 0.9], l: [0, 0.95, -0.2], fov: 40 }]);
+  const c = camK(f, [{ f: 0, p: [0.95, 1.45, 1.6], l: [0, 1.22, -0.7], fov: 46 }, { f: k.dur, p: [0.8, 1.4, 1.35], l: [0, 1.2, -0.7], fov: 46 }]);
   return (
     <Stage>
       <Lights look={{ ...LOOKS.interior, sunI: 0.5, hemiI: 0.35, hemiSky: '#ffd9a8' }} center={[0, 1, 0]} size={5} noSky />
@@ -259,7 +258,7 @@ export const N7Telegraph: React.FC = () => {
       <mesh position={[-0.6, 0.95, -0.35]} material={basic('#ffcf6a')}><sphereGeometry args={[0.07, 12, 10]} /></mesh>
       <Glow pos={[-0.6, 0.98, -0.35]} s={0.9} color="#ffb347" o={0.6} />
       <pointLight position={[-0.6, 1.1, -0.3]} intensity={4} distance={4} color="#ffb347" />
-      <Person look={OPERATOR()} pos={[0.05, 0, -0.95]} rotY={0} pose={merge(idle(f, 2), f >= sp ? EXPR.shock : EXPR.neutral, { armR: f >= sp ? [2.2, 0.4, 0.5] : [1.1, 0.1, 1.2], armL: [0.9, 0.1, 1.2], body: [f >= sp ? -0.15 : 0.1, 0, 0] })} />
+      <Person look={OPERATOR()} pos={[0.05, 0, -0.95]} rotY={0} pose={merge(idle(f, 2), f >= sp ? EXPR.shock : EXPR.neutral, { armR: f >= sp ? [2.6, -0.5, 1.3] : [1.1, 0.1, 1.2], armL: f >= sp ? [2.6, -0.5, 1.3] : [0.9, 0.1, 1.2], body: [f >= sp ? -0.18 : 0.1, 0, 0] })} />
       {spark > 0 && <pointLight position={[0, 1.0, -0.1]} intensity={8 * spark} distance={3} color="#9fdcff" />}
     </Stage>
   );
@@ -284,7 +283,7 @@ export const N7Today: React.FC = () => {
   );
 };
 // «А в 2021 году из-за одной ошибки в настройках на 6 часов отключились 3 огромных сервиса,»
-const APPS: [string, string, string][] = [['#833ab4', '#fd1d1d', 'cam'], ['#1f6feb', '#4c8dff', 'ppl'], ['#1faa59', '#3ddc84', 'chat']];
+const APPS: [string, string, string][] = [['#ff7a45', '#ffb347', 'cam'], ['#3c6cf0', '#6f9bff', 'ppl'], ['#16a085', '#2ecc71', 'chat']];
 const appsScreen = (f: number, off: number[]) => (g: CanvasRenderingContext2D, w: number, h: number) => {
   statusBar(g, w, true, f >= off[2]);
   const bg = g.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, '#1d1340'); bg.addColorStop(1, '#3b1d5c'); g.fillStyle = bg; g.fillRect(0, 44, w, h - 44);
@@ -306,7 +305,7 @@ export const N7Outage: React.FC = () => {
   const k = shotClock('n7_outage');
   const off = [k.w(270), k.w(271) + 4, k.w(272)];
   const tex = useScreen(360, 740, 'apps' + off.map((o) => (f >= o ? 1 : 0)).join('') + Math.floor(f / 4), appsScreen(f, off));
-  const c = camK(f, [{ f: 0, p: [0, 1.32, 0.62], l: [0, 1.3, 0], fov: 30 }, { f: k.dur, p: [0, 1.31, 0.5], l: [0, 1.3, 0], fov: 30 }]);
+  const c = camK(f, [{ f: 0, p: [0, 1.42, 1.45], l: [0, 1.4, 0], fov: 30 }, { f: k.dur, p: [0, 1.42, 1.3], l: [0, 1.4, 0], fov: 30 }]);
   return (
     <Stage bg="#120028">
       <Lights look={LOOKS.studio} center={[0, 1.3, 0]} size={3} noSky noFog />
@@ -335,7 +334,7 @@ export const N7People: React.FC = () => {
   const near = useMemo(() => { const r = rng(91); return Array.from({ length: 10 }).map((_, i) => ({ look: randomLook(960 + i), x: 7.4 + (i % 5) * 1.3 + r() * 0.3, z: -1 - Math.floor(i / 5) * 2.4, rot: (r() - 0.5) })); }, []);
   const far = useMemo(() => { const r = rng(92); const a: Agent[] = []; for (let i = 0; i < 200; i++) a.push({ x: 7.2 + r() * 5, z: -6 - r() * 100, rot: r() * 6, seed: i }); return a; }, []);
   const tex = useScreen(180, 370, 'spinph' + (Math.floor(f / 2) % 10), (g, w, h) => { g.fillStyle = '#f2f4f8'; g.fillRect(0, 0, w, h); spinner(g, w / 2, h / 2, 26, Math.floor(f / 2) * 2); });
-  const c = camK(f, [{ f: 0, p: [10.4, 1.9, 5], l: [9.4, 1.4, -3], fov: 46 }, { f: k.dur, p: [11, 4, 8], l: [9, 0.8, -10], fov: 48 }]);
+  const c = camK(f, [{ f: 0, p: [9.6, 11, 3.2], l: [9.6, 0.5, -2.6], fov: 46 }, { f: k.dur, p: [9.6, 13.5, 4.5], l: [9.6, 0.4, -3], fov: 48 }]);
   return (
     <Stage>
       <Lights look={LOOKS.night} center={[8, 0, -8]} size={40} frame={f} />
@@ -390,7 +389,7 @@ export const N8LO: React.FC = () => {
   const typed = f < t1 ? 0 : f < t1 + 8 ? 1 : f < t2 ? 2 : 2;
   const cr = f >= crash ? 1 : 0;
   const tex = useScreen(640, 480, 'lo' + typed + cr + Math.floor(f / (cr ? 2 : 8)), loScreen(f, typed, cr));
-  const c = camK(f, [{ f: 0, p: [0.55, 1.25, 0.25], l: [0.4, 1.07, -0.47], fov: 40 }, { f: k.dur, p: [0.48, 1.15, -0.05], l: [0.4, 1.07, -0.47], fov: 38 }]);
+  const c = camK(f, [{ f: 0, p: [0.42, 1.12, 1.05], l: [0.4, 1.02, -0.47], fov: 40 }, { f: k.dur, p: [0.41, 1.1, 0.85], l: [0.4, 1.02, -0.47], fov: 40 }]);
   return (
     <Stage>
       <Lights look={{ ...LOOKS.interior, sunI: 0.8, hemiSky: '#fff1d6' }} center={[0, 1, -1]} size={8} noSky />
