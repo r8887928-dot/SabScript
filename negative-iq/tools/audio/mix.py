@@ -144,7 +144,14 @@ BED_LONG = {
     'space': ['title', 'L39_under', 'L66_sim', 'L68_worlds', 'L69_chance', 'L70_pixels', 'L74_cta', 'END'],
     'studio': ['L06_teaser', 'L23_lodfact', 'L52_reaction', 'L56_updates', 'L65_lab'] + [f'C{i}' for i in range(1, 11)],
 }
-BED = BED_LONG if tl.get('long') else BED_GAME if GAME else BED_IQ
+BED_NET = {
+    'city': ['nh3_world', 'n3_courier', 'n4_street', 'n5_post', 'n7_people', 'I1', 'I2', 'I3', 'I4', 'I5', 'I6'],
+    'room': ['nh2_you', 'n1_freeze', 'n1_send', 'n1_game', 'n2_router', 'n2_door', 'n2_neighbor', 'n3_terminal', 'n3_cash', 'n4_radio', 'n4_news', 'n5_shelves', 'n8_lab', 'n8_lo', 'n7_telegraph'],
+    'wind': ['n5_ham', 'n6_wires', 'n6_chat', 'n3_map'],
+    'space': ['nh1_earth', 'title', 'n3_gps', 'n7_possible', 'n7_cables', 'n7_sun', 'n7_today', 'n9_moon'],
+    'studio': ['nh4_tease', 'n7_anchor', 'n7_outage', 'n9_cta'],
+}
+BED = BED_LONG if tl.get('long') else BED_GAME if GAME else BED_NET if tl.get('kind') == 'net' else BED_IQ
 LV = {'city': -21, 'room': -30, 'chaos': -21, 'wind': -22, 'space': -26, 'studio': -32}
 
 

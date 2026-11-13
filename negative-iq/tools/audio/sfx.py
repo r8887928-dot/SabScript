@@ -894,4 +894,78 @@ def chip_warning(seed=18):
     return reverb(to_stereo(_crush(norm(y) * 0.85), 0, 0.2), rt=1.0, mix=0.2)
 
 
+# ------------------------------------------------------------------ «no internet» extras
+def knock(seed=70):
+    out = []
+    for k, g in enumerate([1.0, 0.85, 1.0]):
+        d = 0.18
+        n = int(d * SR)
+        t = np.arange(n) / SR
+        y = sum(a * np.sin(2 * np.pi * f * t) * np.exp(-t / tau) for f, a, tau in [(140, 1, 0.07), (330, 0.6, 0.04), (820, 0.3, 0.02)])
+        y += lp(noise(d, seed + k), 2500) * np.exp(-t / 0.006) * 0.8
+        out.append(y * g)
+    return reverb(to_stereo(norm(np.concatenate(out)), 0, 0.1), rt=0.7, mix=0.18)
+
+
+def coins(seed=71):
+    r = np.random.default_rng(seed)
+    d = 1.0
+    y = np.zeros(int(d * SR))
+    for k in range(7):
+        t0 = int((0.03 + k * 0.1 + r.random() * 0.05) * SR)
+        b = bell(2400 + r.random() * 1600, 0.35, partials=((1, 1), (2.3, 0.5), (3.9, 0.3)), tau=0.12) * (0.6 + 0.4 * r.random())
+        m = min(len(b), len(y) - t0)
+        y[t0:t0 + m] += b[:m]
+    return reverb(to_stereo(norm(y), 0.1, 0.4), rt=0.8, mix=0.15)
+
+
+def sonar(seed=72):
+    d = 1.6
+    n = int(d * SR)
+    t = np.arange(n) / SR
+    y = np.sin(2 * np.pi * 1320 * t) * np.exp(-t / 0.35) + 0.4 * np.sin(2 * np.pi * 2640 * t) * np.exp(-t / 0.15)
+    y *= adsr(n, 0.004, 0.05, 1, 0.1)
+    return reverb(to_stereo(norm(y), 0, 0.3), rt=2.2, mix=0.35)
+
+
+def radio_static(seed=73, d=1.8):
+    n = int(d * SR)
+    x = bp(noise(d, seed), 400, 4500) * 0.5
+    t = np.arange(n) / SR
+    whistle = np.sin(2 * np.pi * np.cumsum(np.interp(t, [0, d * 0.5, d], [2600, 900, 1400])) / SR) * 0.25
+    am = 0.6 + 0.4 * np.sin(2 * np.pi * 5.5 * t)
+    y = (x * am + whistle) * adsr(n, 0.05, 0.1, 0.9, 0.3)
+    return to_stereo(norm(y), 0, 0.2)
+
+
+def morse(seed=74):
+    seq = '... --- ...'
+    out = []
+    for ch in seq:
+        if ch == ' ':
+            out.append(np.zeros(int(0.16 * SR)))
+            continue
+        d = 0.07 if ch == '.' else 0.2
+        n = int(d * SR)
+        out += [osc(720, d, 'sine') * adsr(n, 0.004, 0.01, 1, 0.006), np.zeros(int(0.06 * SR))]
+    y = np.concatenate(out)
+    return reverb(to_stereo(norm(y) * 0.9, -0.1, 0.1), rt=0.6, mix=0.12)
+
+
+def sparks(seed=75, d=0.9):
+    r = np.random.default_rng(seed)
+    n = int(d * SR)
+    y = np.zeros(n)
+    for k in range(26):
+        t0 = int(r.random() ** 1.6 * (n - 4000))
+        L = int((0.004 + r.random() * 0.03) * SR)
+        nz = hp(noise(L / SR, seed + k), 2500)
+        L = len(nz)
+        burst = nz * np.exp(-np.arange(L) / (L * 0.3)) * (0.4 + r.random())
+        y[t0:t0 + L] += burst[: max(0, min(L, n - t0))]
+    zap = osc(60, d, 'saw') * np.exp(-np.arange(n) / (0.25 * SR)) * 0.35
+    y = softclip(y + lp(zap, 900), 1.4)
+    return reverb(to_stereo(norm(y), 0, 0.5), rt=0.6, mix=0.15)
+
+
 GEN = {k: v for k, v in globals().items() if callable(v) and not k.startswith('_')}
