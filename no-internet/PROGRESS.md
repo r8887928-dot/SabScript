@@ -7,7 +7,5 @@
 - Звук: новые SFX и фоновые звуки сцен, микс в `out/audio_net/mix.wav` (не в git, пересобирается: `python3 -I tools/audio/mix.py src/net/timeline.json out/audio_net`).
 - Обложка `final/publish_net/cover_9x16.png`, название, описание и теги в `final/publish_net/PUBLISH.md`.
 
-Идёт: полный рендер `out/render_net/video.mp4`
-(`npx remotion render src/index.ts NoInternet out/render_net/video.mp4 --concurrency=2 --crf=18`).
+Готово: видео `negative-iq/final/no_internet_9x16.mp4` (для GitHub) и отправлено в чат в полном качестве. Проверка: без чёрных и застывших участков, громкость −14 LUFS.
 
-Дальше: свести видео со звуком в `final/no_internet_9x16.mp4`, запустить `scripts/qa.sh`, отправить видео в чат, закоммитить.
