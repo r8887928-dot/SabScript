@@ -57,24 +57,27 @@ export const glove = (col = '#e11d48') => (
   </group>
 );
 export const rifle = () => (
-  <group rotation={[Math.PI / 2, 0, 0]} position={[0, -0.05, 0.12]}>
-    <mesh material={mat('#1f2937', { r: 0.4, m: 0.6 })}><boxGeometry args={[0.05, 0.6, 0.08]} /></mesh>
-    <mesh position={[0, 0.34, 0]} material={mat('#111827', { r: 0.3, m: 0.7 })}><cylinderGeometry args={[0.012, 0.012, 0.2, 8]} /></mesh>
-    <mesh position={[0, 0.05, 0.06]} material={mat('#111827', { r: 0.4 })}><boxGeometry args={[0.03, 0.12, 0.05]} /></mesh>
+  <group position={[0, -0.12, 0.04]}>
+    <mesh material={mat('#1f2937', { r: 0.4, m: 0.6 })} castShadow><boxGeometry args={[0.05, 0.62, 0.09]} /></mesh>
+    <mesh position={[0, -0.42, 0.01]} rotation={[0, 0, 0]} material={mat('#111827', { r: 0.3, m: 0.7 })}><cylinderGeometry args={[0.013, 0.013, 0.24, 8]} /></mesh>
+    <mesh position={[0, -0.05, -0.08]} material={mat('#111827', { r: 0.4 })}><boxGeometry args={[0.035, 0.07, 0.12]} /></mesh>
+    <mesh position={[0, 0.3, -0.02]} material={mat('#1f2937', { r: 0.5 })}><boxGeometry args={[0.04, 0.16, 0.12]} /></mesh>
+    <mesh position={[0, -0.15, 0.065]} material={mat('#0b0b0f', { r: 0.2, m: 0.6 })}><boxGeometry args={[0.03, 0.12, 0.04]} /></mesh>
   </group>
 );
 export const blaster = (col = '#22d3ee') => (
-  <group rotation={[Math.PI / 2, 0, 0]} position={[0, -0.04, 0.1]}>
-    <mesh material={mat('#e5e7eb', { r: 0.3, m: 0.4 })}><boxGeometry args={[0.06, 0.32, 0.09]} /></mesh>
-    <mesh position={[0, 0.19, 0]} material={basic(col)}><cylinderGeometry args={[0.018, 0.018, 0.06, 10]} /></mesh>
+  <group position={[0, -0.1, 0.03]}>
+    <mesh material={mat('#e5e7eb', { r: 0.3, m: 0.4 })} castShadow><boxGeometry args={[0.06, 0.32, 0.09]} /></mesh>
+    <mesh position={[0, -0.19, 0]} material={basic(col)}><cylinderGeometry args={[0.02, 0.02, 0.06, 10]} /></mesh>
+    <mesh position={[0, 0.05, -0.07]} material={mat('#9ca3af', { r: 0.4 })}><boxGeometry args={[0.04, 0.06, 0.1]} /></mesh>
   </group>
 );
 /** dancing pose, `ph` in radians, `style` 0..2 */
 export const dance = (ph: number, style = 0): Pose => {
   const s = Math.sin(ph), c = Math.cos(ph);
-  if (style === 1) return { armL: [2.6 + s * 0.3, -0.4, 0.4], armR: [0.4 - s * 0.3, 0.6, 1.2], body: [0, s * 0.25, s * 0.08], legL: Math.max(0, s) * 0.5, kneeL: Math.max(0, s) * 0.6, bob: Math.abs(s) * 0.05, head: [0, s * 0.3, 0] };
-  if (style === 2) return { armL: [1.2 + c * 0.6, -0.9, 0.6], armR: [1.2 - c * 0.6, 0.9, 0.6], body: [0.05, 0, s * 0.12], legR: Math.max(0, -s) * 0.5, kneeR: Math.max(0, -s) * 0.6, bob: Math.abs(c) * 0.06 };
-  return { armL: [2.9, -0.2 - s * 0.3, 0.2], armR: [2.9, 0.2 + s * 0.3, 0.2], body: [0, c * 0.2, s * 0.1], bob: Math.abs(s) * 0.07, legL: Math.max(0, c) * 0.35, kneeL: Math.max(0, c) * 0.4 };
+  if (style === 1) return { armL: [2.5 + s * 0.3, 0.7, 0.3], armR: [0.5 - s * 0.3, 0.6, 1.1], body: [0, s * 0.25, s * 0.08], legL: Math.max(0, s) * 0.5, kneeL: Math.max(0, s) * 0.6, bob: Math.abs(s) * 0.05, head: [0, s * 0.3, 0] };
+  if (style === 2) return { armL: [1.1 + c * 0.5, 0.9, 0.5], armR: [1.1 - c * 0.5, 0.9, 0.5], body: [0.05, 0, s * 0.12], legR: Math.max(0, -s) * 0.5, kneeR: Math.max(0, -s) * 0.6, bob: Math.abs(c) * 0.06 };
+  return { armL: [2.7, 0.65 + s * 0.25, 0.15], armR: [2.7, 0.65 + s * 0.25, 0.15], body: [0, c * 0.2, s * 0.1], bob: Math.abs(s) * 0.07, legL: Math.max(0, c) * 0.35, kneeL: Math.max(0, c) * 0.4 };
 };
 
 // ------------------------------------------------------------------ props for the game worlds

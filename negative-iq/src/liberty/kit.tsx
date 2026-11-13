@@ -112,7 +112,7 @@ export const Station: React.FC<{ pos: number[]; zone: Zone; tex: THREE.Texture; 
 export const Player: React.FC<{ pos: number[]; seed: number; f: number; cheer?: number; rotY?: number }> = ({ pos, seed, f, cheer = 0, rotY = 0 }) => {
   const look = useMemo(() => randomLook(1100 + seed, { hairStyle: seed % 3 === 0 ? 'cap' : seed % 3 === 1 ? 'short' : 'long', hat: '#1d1d1d' }), [seed]);
   const typing = Math.sin(f * 0.9 + seed) * 0.06;
-  const arms = cheer > 0 ? { armL: [2.9, -0.4, 0.3], armR: [2.9, 0.4, 0.3] } : { armL: [1.15 + typing, -0.12, 0.9], armR: [1.15 - typing, 0.12, 0.9] };
+  const arms = cheer > 0 ? { armL: [2.7, 0.8, 0.2], armR: [2.7, 0.8, 0.2] } : { armL: [1.15 + typing, -0.12, 0.9], armR: [1.15 - typing, 0.12, 0.9] };
   return (
     <Person look={look} pos={[pos[0], pos[1] - 0.3 + cheer * 0.25, pos[2] + 0.3]} rotY={Math.PI + rotY} blob={false}
       pose={merge(idle(f, seed), cheer > 0 ? EXPR.grin : EXPR.neutral, { legL: cheer > 0 ? 0.3 : 1.4, legR: cheer > 0 ? 0.3 : 1.4, kneeL: cheer > 0 ? 0.3 : 1.45, kneeR: cheer > 0 ? 0.3 : 1.45, head: [0.05, 0, 0] }, arms as any)} />

@@ -30,9 +30,10 @@ export const VHeadset: React.FC = () => {
       <Lights look={NEON} center={[0, 0, 0]} size={6} noSky noFog />
       <Cam {...c} />
       <group rotation={[0.1, -0.35 + f * 0.006, 0]} scale={[0.72, 0.72, 0.72]}><BigHeadset glow={glow} /></group>
-      <pointLight position={[-3, 2, 2]} intensity={30} distance={10} color={MAG} />
-      <pointLight position={[3, -1, 2]} intensity={30} distance={10} color={CYAN} />
-      <pointLight position={[0, 3, 4]} intensity={10} distance={10} color="#ffffff" />
+      <pointLight position={[-3, 2, 2]} intensity={60} distance={12} color={MAG} />
+      <pointLight position={[3, -1, 2]} intensity={60} distance={12} color={CYAN} />
+      <pointLight position={[0, 3, 4]} intensity={30} distance={12} color="#ffffff" />
+      <directionalLight position={[2, 4, 6]} intensity={2.5} color="#ffffff" />
       {Array.from({ length: 40 }).map((_, i) => { const r = rng(i + 3); return <sprite key={i} position={[(r() - 0.5) * 8, (r() - 0.5) * 6, -2 - r() * 4]} scale={[0.06, 0.06, 1]} material={spr(i % 2 ? MAG : CYAN, { map: radialTex('glow'), add: true, t: 0.6 * glow })} />; })}
     </Stage>
   );
@@ -81,7 +82,7 @@ export const VLogo: React.FC = () => {
   const { f, dur } = useShot('v_logo');
   const rise = easeOut(ramp(f, 2, 18));
   const c = camK(f, [{ f: 0, p: [0, 2.6, 8.5], l: [0, 2.4, 0], fov: 50 }, { f: dur, p: [0.8, 2.2, 7], l: [0, 2.5, 0], fov: 48 }]);
-  const ppl = [0, 1, 2].map((i) => ({ look: VR_LOOKS[i], pos: [(i - 1) * 1.6, 0, -1 - (i % 2)], rotY: (i - 1) * -0.3, pose: merge(idle(f, i), EXPR.grin, { armL: [1.8 + Math.sin(f * 0.15 + i) * 0.5, -0.3, 0.6], armR: [1.2 - Math.sin(f * 0.15 + i) * 0.4, 0.3, 0.9] }) }));
+  const ppl = [0, 1, 2].map((i) => ({ look: VR_LOOKS[i], pos: [(i - 1) * 1.6, 0, -1 - (i % 2)], rotY: (i - 1) * -0.3, pose: merge(idle(f, i), EXPR.grin, { armL: [1.7 + Math.sin(f * 0.15 + i) * 0.5, 0.5, 0.5], armR: [1.2 - Math.sin(f * 0.15 + i) * 0.4, 0.4, 0.8] }) }));
   return (
     <Stage>
       <Lights look={NEON} center={[0, 1, 0]} size={10} noSky />
@@ -96,7 +97,7 @@ export const VLogo: React.FC = () => {
 export const VReal: React.FC = () => {
   const { f, dur } = useShot('v_real');
   const c = camK(f, [{ f: 0, p: [2.2, 1.8, 3.6], l: [0, 1.3, 0], fov: 44 }, { f: dur, p: [1.6, 1.7, 2.8], l: [0, 1.35, 0], fov: 42 }]);
-  const pose = merge(idle(f, 2), EXPR.grin, { armL: [1.6, -0.5, 0.8], armR: [1.9 + Math.sin(f * 0.3) * 0.3, 0.4, 0.6], body: [0.05, Math.sin(f * 0.1) * 0.2, 0] });
+  const pose = merge(idle(f, 2), EXPR.grin, { armL: [1.5, 0.35, 0.7], armR: [1.9 + Math.sin(f * 0.3) * 0.3, 0.55, 0.5], body: [0.05, Math.sin(f * 0.1) * 0.2, 0] });
   return (
     <Stage>
       <Lights look={NEON} center={[0, 1, 0]} size={8} noSky />
@@ -129,7 +130,7 @@ const SKY = { ...LOOKS.morning, top: '#3b82f6', hor: '#f9a8d4', bot: '#a78bfa', 
 export const VVirtual: React.FC = () => {
   const { f, dur } = useShot('v_virtual');
   const c = camK(f, [{ f: 0, p: [1.6, 1.7, 2.8], l: [0, 1.35, 0], fov: 42 }, { f: dur, p: [3.4, 2.6, 5.4], l: [0, 1.2, -2], fov: 50 }]);
-  const pose = merge(idle(f, 2), EXPR.grin, { armL: [2.6, -0.5, 0.3], armR: [2.6, 0.5, 0.3] });
+  const pose = merge(idle(f, 2), EXPR.grin, { armL: [2.6, 0.75, 0.2], armR: [2.6, 0.75, 0.2] });
   return (
     <Stage>
       <Lights look={SKY} center={[0, 1, 0]} size={12} frame={f} />
@@ -176,7 +177,7 @@ export const VCyberbox: React.FC = () => {
       </group>
       <mesh position={[0, 3.3, -3.5]} material={mat('#222', { r: 0.4 })}><boxGeometry args={[1.6, 0.6, 0.1]} /></mesh>
       <mesh position={[0, 3.3, -3.44]} material={basic('#ffffff', { map: scoreTex(f >= hit ? 3 : 2, 3) })}><planeGeometry args={[1.5, 0.52]} /></mesh>
-      <Person look={VR_LOOKS[3]} pos={[0.1, 0, 0]} rotY={Math.PI} onHead={<Headset />} pose={merge(EXPR.grin, { armL: [1.4 + Math.max(0, swing) * 0.5, -0.25, 1.4 - Math.max(0, swing) * 0.9], armR: [1.4 + Math.max(0, -swing) * 0.5, 0.25, 1.4 - Math.max(0, -swing) * 0.9], body: [0.1, swing * 0.15, 0], legL: 0.3, kneeL: 0.2 })} propL={glove('#e11d48')} propR={glove('#2563eb')} />
+      <Person look={VR_LOOKS[3]} pos={[0.1, 0, 0]} rotY={Math.PI} onHead={<Headset />} pose={merge(EXPR.grin, { armL: [1.15 + Math.max(0, swing) * 0.4, 0.2, 1.6 - Math.max(0, swing) * 1.5], armR: [1.15 + Math.max(0, -swing) * 0.4, 0.2, 1.6 - Math.max(0, -swing) * 1.5], body: [0.1, swing * 0.15, 0], legL: 0.3, kneeL: 0.2 })} propL={glove('#e11d48')} propR={glove('#2563eb')} />
     </Stage>
   );
 };
@@ -220,7 +221,7 @@ export const VGold: React.FC = () => {
       {[-1.6, 1.8].map((x, i) => <group key={i} position={[x, 0, -2.6]}><mesh position={[0, 1.6, 0]} material={mat('#5c3a1e', { r: 0.9 })}><cylinderGeometry args={[0.05, 0.05, 0.5, 6]} /></mesh><Glow pos={[0, 1.95, 0]} s={1.2} color="#ffb347" /><pointLight position={[0, 1.9, 0.2]} intensity={8} distance={6} color="#ffb347" /></group>)}
       {[0, 1].map((i) => {
         const wp = { pos: [(i ? 0.9 : -0.8), 0, -0.6 + i * 0.4], ph: f * 0.25 + i * 2 };
-        return <VRPlayer key={i} look={VR_LOOKS[i + 2]} pos={wp.pos} rotY={i ? -0.6 : 0.5} ctrl={false} pose={merge(i ? walk(wp.ph, 0.6) : idle(f, i), EXPR.grin, { armL: [0.9, -0.2, 0.8], armR: [0.4, 0.2, 0.4] })} />;
+        return <VRPlayer key={i} look={VR_LOOKS[i + 2]} pos={wp.pos} rotY={i ? -0.6 : 0.5} ctrl={false} pose={merge(i ? walk(wp.ph, 0.6) : idle(f, i), EXPR.grin, { armL: [0.9, 0.25, 0.8], armR: [0.4, 0.2, 0.4] })} />;
       })}
       <mesh position={[0.95, 0.75, -0.25]} scale={[1, 1.2, 1]} material={mat('#8b6b3d', { r: 0.9 })} castShadow><sphereGeometry args={[0.25, 16, 12]} /></mesh>
       {f >= fly && Array.from({ length: 12 }).map((_, i) => { const t = clamp((f - fly - i * 2) / 14); if (t <= 0 || t >= 1) return null; return <Coin key={'fc' + i} pos={[lerp(-0.6 + (i % 3) * 0.3, 0.95, t), 0.3 + Math.sin(t * Math.PI) * 1.2, lerp(-1.2, -0.25, t)]} rot={[t * 8, 0, t * 5]} s={1.2} />; })}
@@ -286,7 +287,7 @@ export const VWood: React.FC = () => {
       <mesh rotation={[-Math.PI / 2, 0, 0]} material={mat('#65a30d', { r: 0.9 })} receiveShadow><planeGeometry args={[20, 20]} /></mesh>
       {[[-2, -3], [2.5, -3.5], [-3.5, -1], [3.2, -1.2]].map(([x, z], i) => <group key={i} position={[x, 0, z]}><mesh position={[0, 1.5, 0]} material={mat('#6b4423', { r: 0.9 })}><cylinderGeometry args={[0.18, 0.22, 3, 8]} /></mesh><mesh position={[0, 3.3, 0]} material={mat('#15803d', { r: 0.8, flat: true })}><icosahedronGeometry args={[1.1, 0]} /></mesh></group>)}
       {[0, 1, 2].map((k) => <Log key={k} pos={[0.6, 0.16 + k * 0.3, -0.3 + (k % 2) * 0.15]} rot={[0, 0.3, Math.PI / 2]} />)}
-      <Person look={VR_LOOKS[5]} pos={[-0.6, 0, 0.3]} rotY={0.8} pose={merge(EXPR.grin, { armR: [2.6 - chop * 1.6, 0.2, 0.2], armL: [2.4 - chop * 1.4, -0.2, 0.3] })}
+      <Person look={VR_LOOKS[5]} pos={[-0.6, 0, 0.3]} rotY={0.8} pose={merge(EXPR.grin, { armR: [2.5 - chop * 1.5, 0.25, 0.2], armL: [2.4 - chop * 1.4, 0.25, 0.25] })}
         propR={<group rotation={[1.6, 0, 0]}><mesh position={[0, 0.2, 0]} material={mat('#8b5a2b', { r: 0.8 })}><cylinderGeometry args={[0.02, 0.02, 0.5, 8]} /></mesh><mesh position={[0.05, 0.42, 0]} material={mat('#94a3b8', { r: 0.3, m: 0.9 })}><boxGeometry args={[0.14, 0.1, 0.02]} /></mesh></group>} />
     </Quick>
   );
@@ -309,25 +310,45 @@ export const VPhoto: React.FC = () => {
   const { f, dur } = useShot('v_photo');
   const flash = f > dur * 0.5 && f < dur * 0.5 + 4;
   return (
-    <Quick id="v_photo" look={{ ...LOOKS.day, top: '#38bdf8', hor: '#bbf7d0' }} cam={{ p: [1.8, 1.7, 3.6], l: [0, 1.2, -1.5] }}>
+    <Quick id="v_photo" look={{ ...LOOKS.golden, sunAz: 40, sunEl: 25, fogNear: 40, fogFar: 260 }} cam={{ p: [1.4, 1.6, 3.4], l: [0.2, 1.2, -1.8] }}>
       <mesh rotation={[-Math.PI / 2, 0, 0]} material={mat('#e7c58a', { r: 1 })} receiveShadow><planeGeometry args={[30, 30]} /></mesh>
       {[[-2.5, -3], [2.6, -2.8], [-1, -4.5], [3.8, -4.6], [-3.6, -1.2]].map(([x, z], i) => <Palm key={i} pos={[x, 0, z]} seed={i + 5} s={1.1} />)}
-      <group position={[0.4, 0, -2.6]}>
-        <mesh position={[0, 0.9, 0]} scale={[1.3, 0.9, 0.8]} material={mat('#9ca3af', { r: 0.8 })} castShadow><sphereGeometry args={[0.6, 16, 12]} /></mesh>
-        <mesh position={[0.75, 1.15, 0]} material={mat('#9ca3af', { r: 0.8 })}><sphereGeometry args={[0.38, 14, 10]} /></mesh>
-        <mesh position={[1.05, 0.8, 0]} rotation={[0, 0, 0.3]} material={mat('#9ca3af', { r: 0.8 })}><cylinderGeometry args={[0.07, 0.1, 0.8, 8]} /></mesh>
-        {[[-0.4, 0.25], [0.4, 0.25], [-0.4, -0.25], [0.4, -0.25]].map(([x, z], i) => <mesh key={i} position={[x, 0.3, z]} material={mat('#9ca3af', { r: 0.8 })}><cylinderGeometry args={[0.13, 0.13, 0.6, 8]} /></mesh>)}
-      </group>
-      <Person look={VR_LOOKS[6]} pos={[-0.6, 0, 0.6]} rotY={2.6} pose={merge(EXPR.happy, { armL: [1.5, -0.1, 0.5], armR: [1.5, 0.1, 0.5] })}
+      <Elephant pos={[-0.1, 0, -2.4]} rotY={-1.15} f={f} />
+      <Person look={VR_LOOKS[6]} pos={[-0.6, 0, 0.6]} rotY={2.6} pose={merge(EXPR.happy, { armL: [1.35, 0.05, 0.9], armR: [1.35, 0.05, 0.9] })}
         propR={<group rotation={[1.5, 0, 0]}><mesh material={mat('#111', { r: 0.4 })}><boxGeometry args={[0.16, 0.1, 0.06]} /></mesh></group>} />
       {flash && <Glow pos={[-0.55, 1.35, 0.25]} s={2.5} color="#ffffff" />}
     </Quick>
   );
 };
+/** a cartoon elephant: ears, eyes, tusks, curled trunk */
+const Elephant: React.FC<{ pos: number[]; rotY?: number; f: number }> = ({ pos, rotY = 0, f }) => {
+  const skin = mat('#a7adbb', { r: 0.75 });
+  const trunk = useMemo(() => new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0.12, -0.25, 0.05), new THREE.Vector3(0.2, -0.55, 0.12), new THREE.Vector3(0.32, -0.7, 0.3)]), 20, 0.07, 10, false), []);
+  const ear = Math.sin(f * 0.2) * 0.15;
+  return (
+    <group position={pos as any} rotation={[0, rotY, 0]}>
+      <mesh position={[0, 1.0, 0]} scale={[1.35, 0.95, 0.85]} material={skin} castShadow><sphereGeometry args={[0.62, 24, 18]} /></mesh>
+      {[[-0.45, 0.28], [0.45, 0.28], [-0.45, -0.28], [0.45, -0.28]].map(([x, z], i) => <mesh key={i} position={[x, 0.35, z]} material={skin} castShadow><cylinderGeometry args={[0.15, 0.17, 0.7, 12]} /></mesh>)}
+      <group position={[0.85, 1.3, 0]}>
+        <mesh material={skin} castShadow><sphereGeometry args={[0.38, 20, 16]} /></mesh>
+        {[-1, 1].map((sd) => (
+          <group key={sd} position={[-0.12, 0.05, sd * 0.33]} rotation={[sd * (0.25 + ear), 0, 0]}>
+            <mesh scale={[0.9, 1.1, 0.12]} material={skin}><sphereGeometry args={[0.34, 18, 12]} /></mesh>
+            <mesh position={[0.02, 0, sd * 0.03]} scale={[0.7, 0.85, 0.08]} material={mat('#e7b7c5', { r: 0.8 })}><sphereGeometry args={[0.34, 16, 10]} /></mesh>
+          </group>
+        ))}
+        {[-1, 1].map((sd) => <group key={'e' + sd} position={[0.28, 0.1, sd * 0.17]}><mesh material={basic('#ffffff')}><sphereGeometry args={[0.06, 12, 10]} /></mesh><mesh position={[0.04, 0.01, 0]} material={basic('#111111')}><sphereGeometry args={[0.035, 10, 8]} /></mesh><mesh position={[0.06, 0.025, 0.01]} material={basic('#ffffff')}><sphereGeometry args={[0.01, 6, 6]} /></mesh></group>)}
+        {[-1, 1].map((sd) => <mesh key={'t' + sd} position={[0.3, -0.2, sd * 0.13]} rotation={[0, 0, -2.1]} material={mat('#f5f0e1', { r: 0.4 })}><coneGeometry args={[0.035, 0.32, 10]} /></mesh>)}
+        <mesh geometry={trunk} position={[0.32, -0.05, 0]} rotation={[0, 0, Math.sin(f * 0.12) * 0.15]} material={skin} />
+      </group>
+      <mesh position={[-0.85, 1.1, 0]} rotation={[0, 0, 0.8 + Math.sin(f * 0.3) * 0.2]} material={skin}><cylinderGeometry args={[0.02, 0.03, 0.45, 6]} /></mesh>
+    </group>
+  );
+};
 // «весёлые командные игры для всех от семи лет» — family in the arena
 export const VFamily: React.FC = () => {
   const { f, dur } = useShot('v_family');
-  const ppl = [5, 6, 0, 4].map((li, i) => ({ look: VR_LOOKS[li], pos: [(i - 1.5) * 1.1, 0, -0.5 - (i % 2) * 0.5], rotY: (1.5 - i) * 0.15, pose: merge(idle(f, i), EXPR.grin, { armL: [1.8 + Math.sin(f * 0.25 + i) * 0.6, -0.4, 0.4], armR: [1.4 + Math.cos(f * 0.25 + i) * 0.5, 0.4, 0.6], bob: Math.abs(Math.sin(f * 0.25 + i)) * 0.05 }) }));
+  const ppl = [5, 6, 0, 4].map((li, i) => ({ look: VR_LOOKS[li], pos: [(i - 1.5) * 1.1, 0, -0.5 - (i % 2) * 0.5], rotY: (1.5 - i) * 0.15, pose: merge(idle(f, i), EXPR.grin, { armL: [1.8 + Math.sin(f * 0.25 + i) * 0.6, 0.7, 0.3], armR: [1.4 + Math.cos(f * 0.25 + i) * 0.5, 0.6, 0.5], bob: Math.abs(Math.sin(f * 0.25 + i)) * 0.05 }) }));
   const c = camK(f, [{ f: 0, p: [0.5, 1.5, 4.2], l: [0, 1.1, -0.5], fov: 48 }, { f: dur, p: [-0.4, 1.4, 3.4], l: [0, 1.1, -0.5], fov: 46 }]);
   return (
     <Stage>
@@ -342,7 +363,7 @@ export const VZombies: React.FC = () => {
   const { f, dur } = useShot('v_zombies');
   const zs = useMemo(() => { const r = rng(61); return Array.from({ length: 8 }).map((_, i) => ({ x: (r() - 0.5) * 6, z0: -6 - r() * 8, sp: 0.4 + r() * 0.3, look: randomLook(2200 + i, { skin: '#86a86a', shirt: ['#4b5563', '#57534e', '#3f3f46'][i % 3], pants: '#292524', hairStyle: 'bald' }) })); }, []);
   const shotsOn = Math.floor(f / 6) % 2 === 0;
-  const c = camK(f, [{ f: 0, p: [1.6, 1.7, 3.2], l: [0, 1.2, -4], fov: 50 }, { f: dur, p: [1.1, 1.6, 2.4], l: [0, 1.2, -4], fov: 48 }]);
+  const c = camK(f, [{ f: 0, p: [2.4, 1.9, 2.8], l: [-0.6, 1.1, -4], fov: 50 }, { f: dur, p: [2.0, 1.8, 2.2], l: [-0.6, 1.1, -4], fov: 48 }]);
   return (
     <Stage>
       <Lights look={{ ...LOOKS.night, fog: '#0f2a1a', fogNear: 3, fogFar: 22, hemiSky: '#4ade80', hemiI: 0.45 }} center={[0, 1, -3]} size={12} frame={f} />
@@ -350,7 +371,7 @@ export const VZombies: React.FC = () => {
       <mesh rotation={[-Math.PI / 2, 0, 0]} material={mat('#1f2a1c', { r: 1 })} receiveShadow><planeGeometry args={[40, 40]} /></mesh>
       {Array.from({ length: 14 }).map((_, i) => { const r = rng(i + 80); const x = (r() - 0.5) * 16, z = -4 - r() * 14; return <group key={i} position={[x, 0, z]} rotation={[0, r() * 6, (r() - 0.5) * 0.3]}><mesh position={[0, 2, 0]} material={mat('#1c1917', { r: 1 })}><cylinderGeometry args={[0.08, 0.2, 4, 6]} /></mesh>{[0, 1, 2].map((k) => <mesh key={k} position={[0.4 * (k - 1), 3 + k * 0.3, 0]} rotation={[0, 0, (k - 1) * 0.8]} material={mat('#1c1917', { r: 1 })}><cylinderGeometry args={[0.02, 0.05, 1.4, 5]} /></mesh>)}</group>; })}
       <Smoke pos={[0, 0, -6]} f={f} n={10} h={2} s={4} color="#3f6b4a" o={0.35} />
-      {zs.map((z, i) => { const zz = Math.min(z.z0 + (f / 30) * z.sp, -2.2); return <Person key={i} look={z.look} pos={[z.x, 0, zz]} rotY={0} pose={merge(walk(f * 0.15 + i, 0.5), EXPR.dumb, { armL: [1.5, -0.1, 0.1], armR: [1.4, 0.1, 0.2], head: [0.2, 0, 0.2] })} />; })}
+      {zs.map((z, i) => { const zz = Math.min(z.z0 + (f / 30) * z.sp, -2.2); return <Person key={i} look={z.look} pos={[z.x, 0, zz]} rotY={0} pose={merge(walk(f * 0.15 + i, 0.5), EXPR.dumb, { armL: [1.5, 0.1, 0.1], armR: [1.4, 0.1, 0.2], head: [0.2, 0, 0.2] })} />; })}
       {[[-0.6, 0.6], [0.7, 0.4]].map(([x, z], i) => (
         <group key={i}>
           <Person look={VR_LOOKS[i]} pos={[x, 0, z]} rotY={Math.PI + (i ? -0.2 : 0.2)} pose={merge(EXPR.grin, { armR: [1.55, 0.05, 0.05], armL: [1.45, -0.3, 0.6] })} propR={blaster('#facc15')} onHead={<group />} />
@@ -366,7 +387,7 @@ export const VTactics: React.FC = () => {
   const { f, dur } = useShot('v_tactics');
   const op = (seed: number) => randomLook(2300 + seed, { shirt: '#3f4d2a', pants: '#2f3a21', hairStyle: 'bald', skin: '#c58c5f' });
   const helmet = <group><mesh position={[0, 0.08, -0.01]} material={mat('#3f4d2a', { r: 0.6 })}><sphereGeometry args={[0.235, 18, 12, 0, Math.PI * 2, 0, Math.PI / 2]} /></mesh><mesh position={[0, 0.04, 0.2]} material={mat('#0b0b0f', { r: 0.1, m: 0.7 })}><boxGeometry args={[0.26, 0.08, 0.04]} /></mesh></group>;
-  const c = camK(f, [{ f: 0, p: [0.9, 1.5, 3.2], l: [0, 1.3, -3], fov: 48 }, { f: dur, p: [0.5, 1.45, 2.2], l: [0, 1.3, -3], fov: 46 }]);
+  const c = camK(f, [{ f: 0, p: [0.5, 1.3, 2.4], l: [0, 1.35, -2], fov: 48 }, { f: dur, p: [0.3, 1.25, 1.6], l: [0, 1.4, -2], fov: 46 }]);
   return (
     <Stage>
       <Lights look={{ ...LOOKS.interior, sunI: 0.2, hemiI: 0.25, hemiSky: '#ffb347', fog: '#1a1208', fogNear: 3, fogFar: 18 }} center={[0, 1, -3]} size={10} noSky />
@@ -376,8 +397,8 @@ export const VTactics: React.FC = () => {
       {[-2, -5, -8, -11].map((z, i) => <group key={i}><mesh position={[0, 3, z]} material={basic('#ffb347', { t: hash(i + Math.floor(f / 5)) > 0.2 ? 0.95 : 0.3 })}><boxGeometry args={[0.8, 0.05, 0.2]} /></mesh><pointLight position={[0, 2.8, z]} intensity={4} distance={5} color="#ffb347" /></group>)}
       {[[-0.6, -0.6], [0.6, -1.4], [-0.3, -2.4]].map(([x, z], i) => (
         <group key={i}>
-          <Person look={op(i)} pos={[x, 0, z]} rotY={Math.PI} onHead={helmet} pose={merge(walk(f * 0.2 + i, 0.4), EXPR.neutral, { armR: [1.5, 0.05, 0.1], armL: [1.4, -0.35, 0.7], body: [0.12, 0, 0] })} propR={rifle()} />
-          <mesh position={[x + 0.05, 1.32, z - 3.1]} rotation={[Math.PI / 2, 0, 0]} material={basic('#ef4444', { add: true, t: 0.8 })}><cylinderGeometry args={[0.006, 0.006, 6, 4]} /></mesh>
+          <Person look={op(i)} pos={[x, 0, z + (f / 30) * 0.35 - 0.8]} rotY={0} onHead={helmet} pose={merge(walk(f * 0.2 + i, 0.4), EXPR.neutral, { armR: [1.5, 0.05, 0.1], armL: [1.4, -0.35, 0.7], body: [0.12, 0, 0] })} propR={rifle()} />
+          
         </group>
       ))}
       <Smoke pos={[0, 0, -9]} f={f} n={8} h={2.5} s={3} color="#5a4a3a" o={0.4} />
@@ -407,7 +428,7 @@ export const VBattle: React.FC = () => {
 // features / friends: the arena again
 export const VFeatures: React.FC = () => {
   const { f, dur } = useShot('v_features');
-  const ppl = [0, 1, 2, 3].map((li, i) => ({ look: VR_LOOKS[li], pos: [(i - 1.5) * 1.3, 0, -1 - (i % 2) * 0.6], rotY: (1.5 - i) * 0.2, pose: merge(idle(f, i), EXPR.grin, { armL: [1.4 + Math.sin(f * 0.2 + i) * 0.4, -0.3, 0.7], armR: [1.6 + Math.cos(f * 0.2 + i) * 0.4, 0.3, 0.6] }) }));
+  const ppl = [0, 1, 2, 3].map((li, i) => ({ look: VR_LOOKS[li], pos: [(i - 1.5) * 1.3, 0, -1 - (i % 2) * 0.6], rotY: (1.5 - i) * 0.2, pose: merge(idle(f, i), EXPR.grin, { armL: [1.4 + Math.sin(f * 0.2 + i) * 0.4, 0.45, 0.6], armR: [1.6 + Math.cos(f * 0.2 + i) * 0.4, 0.45, 0.5] }) }));
   const c = camK(f, [{ f: 0, p: [3.5, 4.5, 6.5], l: [0, 0.8, -1], fov: 50 }, { f: dur, p: [-2.5, 3.5, 6], l: [0, 1, -1], fov: 50 }]);
   return (
     <Stage>
@@ -420,7 +441,7 @@ export const VFeatures: React.FC = () => {
 export const VFriends: React.FC = () => {
   const { f, dur } = useShot('v_friends');
   const jump = Math.abs(Math.sin(f * 0.2));
-  const ppl = [0, 2, 4, 5].map((li, i) => ({ look: VR_LOOKS[li], pos: [(i - 1.5) * 0.8, 0, -0.4], rotY: (1.5 - i) * 0.25, pose: merge(EXPR.grin, { armL: [2.9, -0.4, 0.2], armR: [2.9, 0.4, 0.2], y: jump * 0.15 * ((i % 2) ? 1 : 0.6), legL: jump * 0.3, kneeL: jump * 0.5 }) }));
+  const ppl = [0, 2, 4, 5].map((li, i) => ({ look: VR_LOOKS[li], pos: [(i - 1.5) * 0.8, 0, -0.4], rotY: (1.5 - i) * 0.25, pose: merge(EXPR.grin, { armL: [2.7, 0.8, 0.15], armR: [2.7, 0.8, 0.15], y: jump * 0.15 * ((i % 2) ? 1 : 0.6), legL: jump * 0.3, kneeL: jump * 0.5 }) }));
   const c = camK(f, [{ f: 0, p: [0, 1.4, 3.6], l: [0, 1.4, -0.4], fov: 46 }, { f: dur, p: [0.5, 1.3, 3.0], l: [0, 1.45, -0.4], fov: 44 }]);
   return (
     <Stage>
