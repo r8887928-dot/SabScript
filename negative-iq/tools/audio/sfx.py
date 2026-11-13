@@ -968,4 +968,44 @@ def sparks(seed=75, d=0.9):
     return reverb(to_stereo(norm(y), 0, 0.5), rt=0.6, mix=0.15)
 
 
+# ------------------------------------------------------------------ shooter-ad extras (cartoon, not realistic)
+def gunshot(seed=80):
+    d = 0.6
+    n = int(d * SR)
+    t = np.arange(n) / SR
+    crack = hp(noise(d, seed), 1800) * np.exp(-t / 0.012)
+    body = lp(noise(d, seed + 1), 900) * np.exp(-t / 0.06) * 0.8
+    thump = np.sin(2 * np.pi * 70 * t * (1 - t)) * np.exp(-t / 0.08) * 0.9
+    y = softclip((crack + body + thump) * 1.4, 1.6)
+    return reverb(to_stereo(norm(y), 0.1, 0.3), rt=0.9, mix=0.22)
+
+
+def radio_click(seed=81):
+    d = 0.12
+    n = int(d * SR)
+    y = bp(noise(d, seed), 1500, 4500) * np.exp(-np.arange(n) / (0.02 * SR)) + osc(1200, d, 'square') * np.exp(-np.arange(n) / (0.01 * SR)) * 0.3
+    return to_stereo(norm(y) * 0.8, -0.3, 0.1)
+
+
+def bomb_beep(seed=82):
+    d = 0.14
+    n = int(d * SR)
+    y = osc(2400, d, 'sine') * adsr(n, 0.003, 0.02, 0.8, 0.04)
+    return to_stereo(norm(y) * 0.8, 0, 0.1)
+
+
+def plant_beeps(seed=83, d=2.6):
+    out = []
+    for k in range(9):
+        out += [osc(1800 + (k % 3) * 300, 0.09, 'square') * adsr(int(0.09 * SR), 0.002, 0.02, 0.8, 0.02), np.zeros(int(0.2 * SR))]
+    y = lp(np.concatenate(out), 4000)
+    return to_stereo(norm(y) * 0.7, 0, 0.1)
+
+
+def smoke_hiss(seed=84, d=3.0):
+    n = int(d * SR)
+    y = hp(noise(d, seed), 2500) * adsr(n, 0.05, 0.3, 0.6, 1.2) + lp(noise(d, seed + 1), 400) * adsr(n, 0.02, 0.2, 0.3, 1.0) * 0.8
+    return to_stereo(norm(y) * 0.8, 0, 0.6)
+
+
 GEN = {k: v for k, v in globals().items() if callable(v) and not k.startswith('_')}
