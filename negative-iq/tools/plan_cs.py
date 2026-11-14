@@ -18,6 +18,9 @@ for line in script.strip().splitlines():
     TEXT[lid] = (voice, re.sub(r'\[[^\]]*\]\s*', '', text).strip())
 NICK = {'Charlie': 'Kazbek', 'Will': 'TimurBRO', 'Callum': 'Dimon_AWP', 'Harry': 'Aidos', 'Adam': None, 'Liam': None}
 
+# subtitle text where it differs from the spoken script (same word count as whisper hears)
+DISP = {'VO': 'Лучше час эмоций в клубе с друзьями, чем целый вечер скуки дома одному. GAME VR ZONE, улица Умитбаева, 29. Приходи за эмоциями!'}
+
 # story clock (seconds) — where each line starts
 AT = {'H1': 12.9, 'M1': 16.7, 'M2': 19.8, 'M3': 22.0, 'H2': 26.5, 'M4': 33.4, 'A1': 40.3, 'M5': 45.6, 'M6': 48.3,
       'A2': 59.4, 'M7': 60.4, 'M8': 61.6, 'M9': 62.9, 'VO': 66.2}
@@ -56,7 +59,7 @@ if MODEL:
     m = WhisperModel(MODEL, device='cpu', compute_type='int8', cpu_threads=4)
 for lid, t in AT.items():
     voice_name, text = TEXT[lid]
-    toks = text.split()
+    toks = DISP.get(lid, text).split()
     ws = []
     if MODEL:
         raw = subprocess.run(['ffmpeg', '-loglevel', 'error', '-i', os.path.join(VD, f'{lid}.mp3'), '-f', 'f32le', '-ac', '1', '-ar', '16000', '-'], capture_output=True).stdout
@@ -77,7 +80,7 @@ B = {'grab': 4.6, 'pull': 6.4, 'flash': 7.8, 'land': 11.0, 'hud': 11.3, 'td1': 1
 SHOTS = [('c_club', 0.0, 'none'), ('c_hand', 3.8, 'cut'), ('c_pull', 6.4, 'cut'), ('c_fall', 8.0, 'flash'), ('c_land', 10.8, 'cut'),
          ('c_where', 12.6, 'cut'), ('c_team1', 16.4, 'whip'), ('c_team2', 21.6, 'cut'), ('c_loot', 26.2, 'whip'), ('c_gate', 31.0, 'cut'),
          ('c_run', 34.6, 'whip'), ('c_plant', 37.0, 'cut'), ('c_tunnel', 41.6, 'whip'), ('c_lowhp', 46.4, 'cut'), ('c_smoke', 51.4, 'cut'),
-         ('c_car', 53.6, 'cut'), ('c_kill', 58.2, 'cut'), ('c_win', 59.6, 'flash'), ('c_back', 65.4, 'flash'), ('c_end', 71.6, 'fade')]
+         ('c_car', 53.6, 'cut'), ('c_kill', 58.2, 'cut'), ('c_win', 59.6, 'flash'), ('c_back', 65.4, 'flash'), ('c_end', 72.1, 'fade')]
 TOTAL_FRAMES = int(round(TOTAL * FPS))
 shots = []
 for sid, t, tr in SHOTS:
@@ -88,7 +91,7 @@ for i, s in enumerate(shots):
 
 # subtitles: one line per voice line, split into chunks of <= 3 words
 subs = []
-KEY = {'Где', 'интересно.', 'проиграли...', 'раунд.', 'один', 'пяти?', 'погнали.', 'Харош!', 'заложена.', 'Красава!', 'хэпэшка...', 'выигран.', 'Харош!!', 'брат!', 'клатч!', 'пяти!', 'эмоций', 'скуки', 'Круглосуточно.'}
+KEY = {'Где', 'интересно.', 'проиграли...', 'раунд.', 'один', 'пяти?', 'погнали.', 'Харош!', 'заложена.', 'Красава!', 'хэпэшка...', 'выигран.', 'Харош!!', 'брат!', 'клатч!', 'пяти!', 'эмоций', 'скуки', 'GAME', 'ZONE,', 'Умитбаева,', 'эмоциями!'}
 for lid in AT:
     ws = [w for w in words if w['line'] == lid]
     for k in range(0, len(ws), 3):
@@ -114,7 +117,7 @@ CUES += [('pickup1', B['pickup'], 'chip_coin', -10), ('pickup2', B['pickup'] + 0
          ('heart', 46.6, 'heartbeat', -8), ('throw', B['throw'], 'whoosh', -10), ('smoke', B['smoke'], 'smoke_hiss', -6),
          ('door2', B['enemy2_in'], 'footsteps', -14), ('defuse', B['defuse0'], 'relays', -10), ('last_shot', B['kill_last'], 'gunshot', -3),
          ('win_hit', B['win'], 'impact_big', -6), ('win_shimmer', B['win'] + 0.2, 'chip_achievement', -10), ('back_whoosh', B['back'] - 0.2, 'whoosh_up', -8),
-         ('cheer', B['back'] + 0.3, 'crowd', -14), ('end_hit', 71.6, 'impact_soft', -10)]
+         ('cheer', B['back'] + 0.3, 'crowd', -14), ('end_hit', 72.1, 'impact_soft', -10)]
 for t in np.arange(B['plant1'] + 1.0, B['kill_last'], 1.0):
     CUES.append((f'beep{t:.0f}', float(t), 'bomb_beep', -16))
 cues = {n: {'t': round(float(t), 3), 'kind': k, 'gain': g} for n, t, k, g in CUES}

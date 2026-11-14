@@ -62,6 +62,8 @@ export const EnemyHelmet: React.FC = () => (
 export const aimPose = (extra: Pose = {}): Pose => merge({ armR: [1.55, 0.05, 0.05], armL: [1.45, -0.25, 0.65], body: [0.06, 0, 0] }, extra);
 export const crouch = (extra: Pose = {}): Pose => merge({ legL: 1.2, legR: 0.9, kneeL: 1.9, kneeR: 1.7, y: -0.42, body: [0.25, 0, 0] }, extra);
 export const kneel = (extra: Pose = {}): Pose => merge({ legL: 1.4, legR: 0.1, kneeL: 1.4, kneeR: 1.6, y: -0.38, body: [0.35, 0, 0] }, extra);
+/** sitting flat on the ground (landed on the butt), hands behind for support */
+export const sitGround = (extra: Pose = {}): Pose => merge({ legL: 1.5, legR: 1.35, kneeL: 0.2, kneeR: 0.45, y: -0.62, body: [-0.12, 0, 0], armL: [-0.55, 0.45, 0.15], armR: [-0.55, 0.45, 0.15] }, extra);
 export const fall = (f: number): Pose => ({ armL: [0.4, 2.2 + Math.sin(f * 0.6) * 0.4, 0.4], armR: [0.4, 2.2 + Math.cos(f * 0.6) * 0.4, 0.4], legL: Math.sin(f * 0.5) * 0.6, legR: -Math.sin(f * 0.5) * 0.6, kneeL: 0.5, kneeR: 0.5 });
 
 // ------------------------------------------------------------------ effects

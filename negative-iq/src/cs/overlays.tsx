@@ -127,7 +127,7 @@ export const CsEnd: React.FC = () => {
   if (back && f >= back.from + 10 && f < back.to) {
     const l = f - back.from - 10;
     out.push(<div key="prov" style={{ position: 'absolute', left: 60, right: 60, top: 260, textAlign: 'center', transform: `scale(${backOut(l / 10, 1.6)})` }}>
-      <div style={{ fontFamily: TECH, fontSize: 64, lineHeight: 1.1, color: '#fff', ...stroke(9), textShadow: '0 0 30px rgba(168,85,247,0.8)' }}>ЛУЧШЕ ЧАС ЭМОЦИЙ В КЛУБЕ,</div>
+      <div style={{ fontFamily: TECH, fontSize: 64, lineHeight: 1.1, color: '#fff', ...stroke(9), textShadow: '0 0 30px rgba(255,43,214,0.8)' }}>ЛУЧШЕ ЧАС ЭМОЦИЙ В КЛУБЕ,</div>
       <div style={{ fontFamily: TECH, fontSize: 56, lineHeight: 1.1, color: YEL, ...stroke(8), marginTop: 8 }}>ЧЕМ ВЕЧЕР СКУКИ ДОМА</div>
     </div>);
   }
@@ -135,14 +135,13 @@ export const CsEnd: React.FC = () => {
     const l = f - s.from;
     out.push(<div key="end" style={{ position: 'absolute', left: 60, right: 60, top: 300, textAlign: 'center' }}>
       <div style={{ transform: `scale(${backOut(l / 9, 1.8)})` }}>
-        <div style={{ fontFamily: TECH, fontSize: 150, lineHeight: 1, color: '#fff', ...stroke(12), textShadow: '0 0 60px #a855f7' }}>LIBERTY</div>
-        <div style={{ fontFamily: FONT, fontWeight: 900, fontSize: 40, color: '#22d3ee', letterSpacing: 10, marginTop: 8 }}>COMPUTER CLUB</div>
+        <div style={{ fontFamily: TECH, fontSize: 160, lineHeight: 0.95, color: '#fff', ...stroke(12), textShadow: '0 0 50px #ff2bd6' }}>GAME</div>
+        <div style={{ fontFamily: TECH, fontSize: 136, lineHeight: 1, color: '#22d3ee', ...stroke(12), textShadow: '0 0 50px #22d3ee' }}>VR ZONE</div>
       </div>
-      <div style={{ marginTop: 36, opacity: easeOut((l - 10) / 10) }}>
-        <div style={{ display: 'inline-block', background: 'linear-gradient(160deg, rgba(10,10,22,0.92), rgba(24,10,40,0.92))', border: '4px solid #a855f7', borderRadius: 26, padding: '24px 36px', boxShadow: '0 0 40px rgba(168,85,247,0.6)' }}>
-          <div style={{ fontFamily: FONT, fontWeight: 900, fontSize: 50, color: '#fff' }}>пр. Достык, 55 · Алматы</div>
-          <div style={{ fontFamily: FONT, fontWeight: 900, fontSize: 46, color: '#fff', marginTop: 10 }}>24/7 · круглосуточно</div>
-          <div style={{ fontFamily: TECH, fontSize: 76, color: '#22d3ee', marginTop: 14 }}>+7 747 577 44 55</div>
+      <div style={{ marginTop: 40, opacity: easeOut((l - 10) / 10) }}>
+        <div style={{ display: 'inline-block', background: 'linear-gradient(160deg, rgba(10,10,22,0.92), rgba(30,8,40,0.92))', border: '4px solid #ff2bd6', borderRadius: 26, padding: '26px 40px', boxShadow: '0 0 40px rgba(255,43,214,0.55)' }}>
+          <div style={{ fontFamily: FONT, fontWeight: 900, fontSize: 36, color: '#22d3ee', letterSpacing: 6 }}>АДРЕС</div>
+          <div style={{ fontFamily: TECH, fontSize: 76, color: '#fff', marginTop: 6 }}>ул. Умитбаева, 29</div>
         </div>
       </div>
       <div style={{ marginTop: 34, opacity: easeOut((l - 30) / 10), fontFamily: TECH, fontSize: 48, color: YEL, ...stroke(7) }}>ПРИХОДИ ЗА ЭМОЦИЯМИ!</div>

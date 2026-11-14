@@ -6,9 +6,9 @@ import { useScreen } from '../three/props';
 import { Person, merge, EXPR, idle, walk, run, randomLook, Pose } from '../three/person';
 import { tl, shotById } from '../lib/tl';
 import { camK, ramp, lerp, rng, easeOut, easeIn, smoother, kick, clamp, hash } from '../lib/anim';
-import { Hall, Station } from '../liberty/kit';
+import { Hall, Station, Text3D } from '../liberty/kit';
 import { DesertMap } from './map';
-import { HERO, ToyRifle, RifleOnGround, BombPack, Grenade, enemyLook, EnemyHelmet, aimPose, crouch, kneel, fall, Puffs, SmokeCloud, MuzzleFlash, Tracer, Stars, Confetti, ScreenArm } from './actors';
+import { HERO, ToyRifle, RifleOnGround, BombPack, Grenade, enemyLook, EnemyHelmet, aimPose, crouch, kneel, fall, sitGround, Puffs, SmokeCloud, MuzzleFlash, Tracer, Stars, Confetti, ScreenArm } from './actors';
 
 const B = () => tl.beats as Record<string, number>;
 const useShot = (id: string) => {
@@ -18,7 +18,7 @@ const useShot = (id: string) => {
   const at = (sec: number) => Math.round(sec * 30) - s.from;
   return { f, dur: s.dur as number, at };
 };
-const DAY = { ...LOOKS.day, sunAz: 60, sunEl: 48, sun: '#fff1d6', sunI: 3.4, hemiI: 1.0, fog: '#f3dfb6', fogNear: 40, fogFar: 160, top: '#3b8be0', hor: '#f6e3bd' };
+const DAY = { ...LOOKS.day, sunAz: 60, sunEl: 48, sun: '#fff1d6', sunI: 3.0, hemiI: 0.9, fog: '#d9e6f2', fogNear: 70, fogFar: 260, top: '#2f78d6', hor: '#a9cfee' };
 const CLUB = { ...LOOKS.studio, top: '#07050f', hor: '#140c26', bot: '#05040a', fog: '#0c0818', fogNear: 7, fogFar: 30, hemiSky: '#7c6cf7', hemiGround: '#100a20', hemiI: 0.6, sunI: 0.7, env: 0.35 };
 const seated = (extra: Pose = {}): Pose => merge({ legL: 1.4, legR: 1.4, kneeL: 1.45, kneeR: 1.45 }, extra);
 
@@ -38,6 +38,8 @@ const gameView = (f: number, glow: number) => (g: CanvasRenderingContext2D, w: n
 const ClubSet: React.FC<{ f: number; tex: THREE.Texture; cheer?: number; hallPlayers?: number }> = ({ f, tex, cheer = 0, hallPlayers = 7 }) => (
   <group>
     <Hall f={f} zones={['vip', 'main', 'pro']} rows={3} cols={5} players={hallPlayers} cheer={cheer} />
+    <Text3D text="GAME" size={0.5} depth={0.12} color="#ffffff" glow="#ff2bd6" pos={[-1.2, 2.45, -9.75]} />
+    <Text3D text="VR ZONE" size={0.5} depth={0.12} color="#22d3ee" glow="#22d3ee" pos={[1.25, 2.45, -9.75]} />
     <mesh position={[0, 0.74, 2.12]} material={mat('#121218', { r: 0.4, m: 0.3 })} castShadow receiveShadow><boxGeometry args={[1.4, 0.05, 0.75]} /></mesh>
     <Station pos={[0, 0, 2.3]} zone="vip" tex={tex} big chair={false} seed={2} />
   </group>
@@ -127,15 +129,16 @@ export const CLand: React.FC = () => {
   const land = at(B().land);
   const y = f < land ? lerp(9, 0, easeIn(f / land)) : 0;
   const sq = f >= land ? Math.exp(-(f - land) * 0.25) * Math.sin((f - land) * 0.9) * 0.25 : 0;
-  const c = { pos: [2.6 + kick(f, land, 10) * 0.12, 1.5 + kick(f, land, 10) * 0.12, 13], look: [0, 1.0, 8], fov: 46 };
+  const c = { pos: [lerp(2.9, 2.3, f / dur) + kick(f, land, 10) * 0.12, 1.5 + kick(f, land, 10) * 0.12, lerp(13.4, 12.6, f / dur)], look: [0, lerp(1.6, 0.7, smoother(clamp(f / land))), 8], fov: 46 };
   return (
     <Stage>
       <Lights look={DAY} center={[0, 0, 6]} size={30} frame={f} />
       <Cam {...c} />
       <DesertMap />
       <group position={[0, y, 8]} scale={[1 + sq * 0.6, 1 - sq, 1 + sq * 0.6]}>
-        <Person look={HERO()} pos={[0, 0, 0]} pose={f < land ? merge(EXPR.shock, fall(f)) : merge(EXPR.dumb, crouch({ y: -0.3 * Math.exp(-(f - land) * 0.15) }))} />
+        <Person look={HERO()} pos={[0, 0, 0]} pose={f < land ? merge(EXPR.shock, fall(f), { legL: 1.1, legR: 1.0, kneeL: 0.3, kneeR: 0.4 }) : merge(EXPR.dumb, sitGround({ y: -0.62 - 0.12 * Math.exp(-(f - land) * 0.2), head: [0.05, Math.sin((f - land) * 0.12) * 0.35, Math.sin((f - land) * 0.09) * 0.12] }))} />
       </group>
+      {f >= land + 4 && <Stars pos={[0, 1.25, 8]} f={f} />}
       <Puffs pos={[0, 0, 8]} t={f >= land ? (f - land) / 40 : 0} n={22} r={2.6} col="#e8d3a8" o={0.95} s={1.4} />
     </Stage>
   );
@@ -145,13 +148,15 @@ export const CWhere: React.FC = () => {
   const { f, dur, at } = useShot('c_where');
   const curious = at(tl.at.H1 + 1.4);
   const yaw = Math.sin(f * 0.06) * 0.6;
-  const c = camK(f, [{ f: 0, p: [0.35, 1.62, 10.0], l: [0, 1.55, 8], fov: 34 }, { f: dur, p: [0.25, 1.6, 9.6], l: [0, 1.56, 8], fov: 34 }]);
+  const up = smoother(clamp((f - curious + 6) / 22));
+  const hy = lerp(0.98, 1.55, up);
+  const c = { pos: [lerp(0.6, 0.4, f / dur), hy + 0.3, lerp(11.2, 10.6, f / dur)], look: [0, hy - 0.25, 8], fov: 40 };
   return (
     <Stage>
       <Lights look={DAY} center={[0, 0, 6]} size={30} frame={f} />
       <Cam {...c} />
       <DesertMap />
-      <Person look={HERO()} pos={[0, 0, 8]} pose={merge(idle(f, 2), f < curious ? EXPR.confused : EXPR.happy, { head: [0.0, yaw, f < curious ? 0.12 : -0.05], armR: f > curious ? [1.9, 0.2, 1.9] : [0.1, 0.1, 0.2] })} />
+      <Person look={HERO()} pos={[0, 0, 8]} pose={up < 1 ? merge(f < curious ? EXPR.confused : EXPR.happy, sitGround({ y: lerp(-0.62, 0, up), legL: lerp(1.5, 0, up), legR: lerp(1.35, 0, up), kneeL: lerp(0.2, 0, up) + Math.sin(up * Math.PI) * 1.4, kneeR: lerp(0.45, 0, up) + Math.sin(up * Math.PI) * 1.4, body: [lerp(-0.12, 0, up) + Math.sin(up * Math.PI) * 0.45, 0, 0], armL: [lerp(-0.55, 0.1, up), lerp(0.45, 0.1, up), 0.2], armR: [lerp(-0.55, 0.1, up), lerp(0.45, 0.1, up), 0.2], head: [0.0, yaw * (1 - up), 0.12] })) : merge(idle(f, 2), EXPR.happy, { head: [0.0, yaw * 0.3, -0.05], armR: [1.9, 0.2, 1.9] })} />
       <Puffs pos={[0, 0, 8]} t={0.55 + f / 300} n={10} r={3} col="#e8d3a8" o={0.6} s={1.6} />
     </Stage>
   );
@@ -335,15 +340,15 @@ export const CSmoke: React.FC = () => {
   const { f, dur, at } = useShot('c_smoke');
   const th = at(B().throw), sm = at(B().smoke);
   const gt = clamp((f - th) / (sm - th));
-  const gpos = [lerp(4.0, 0, gt), 1.6 + Math.sin(gt * Math.PI) * 2.2 - gt * 1.5, lerp(-8.8, -14.6, gt)];
-  const c = camK(f, [{ f: 0, p: [6.8, 2.4, -5.2], l: [1.6, 1.0, -13], fov: 46 }, { f: dur, p: [6.4, 2.3, -5.6], l: [1.2, 1.2, -13.5], fov: 46 }]);
+  const gpos = [lerp(4.3, 0, gt), 1.7 + Math.sin(gt * Math.PI) * 2.4 - gt * 1.5, lerp(-7.9, -14.6, gt)];
+  const c = camK(f, [{ f: 0, p: [6.7, 2.6, -4.4], l: [1.6, 1.0, -13], fov: 46 }, { f: dur, p: [6.3, 2.5, -4.8], l: [1.0, 1.0, -13.8], fov: 46 }]);
   return (
     <Stage>
       <Lights look={DAY} center={[0, 0, -12]} size={30} frame={f} />
       <Cam {...c} />
       <DesertMap gate={1} />
       <BombPack pos={[0, 0, -14.75]} s={1.3} armed f={f} />
-      <Person look={HERO()} pos={[4.0, 0, -8.6]} rotY={Math.PI + 0.5} pose={merge(EXPR.grin, { armL: f < th ? [2.6 - ramp(f, th - 10, th) * 1.8, 0.4, 0.5] : [0.8, 0.3, 0.4], armR: [0.6, 0.1, 0.8] })} propR={<ToyRifle />} />
+      <Person look={HERO()} pos={[4.6, 0, -7.4]} rotY={Math.PI + 0.57} pose={merge(EXPR.grin, { armL: f < th ? [2.6 - ramp(f, th - 10, th) * 1.8, 0.4, 0.5] : [0.8, 0.3, 0.4], armR: [0.6, 0.1, 0.8] })} propR={<ToyRifle />} />
       {f >= th && f < sm && <Grenade pos={gpos} rot={f * 0.5} />}
       <SmokeCloud pos={[0, 0, -14.6]} t={f >= sm ? (f - sm) / 30 : 0} f={f} />
     </Stage>
@@ -353,7 +358,7 @@ export const CSmoke: React.FC = () => {
 export const CCar: React.FC = () => {
   const { f, dur, at } = useShot('c_car');
   const ein = at(B().enemy2_in), def = at(B().defuse0);
-  const c = camK(f, [{ f: 0, p: [7.0, 3.3, -4.8], l: [0.4, 0.7, -14.4], fov: 46 }, { f: dur, p: [6.6, 3.1, -5.3], l: [0.1, 0.7, -14.5], fov: 42 }]);
+  const c = camK(f, [{ f: 0, p: [6.9, 4.1, -4.0], l: [0.3, 0.2, -14.4], fov: 44 }, { f: dur, p: [6.6, 3.9, -4.5], l: [0.0, 0.2, -14.5], fov: 40 }]);
   const walking = f >= ein && f < def;
   const ep = clamp((f - ein) / Math.max(1, def - ein));
   const epos = [lerp(-6.8, -0.3, ep), 0, lerp(-15.2, -14.6, ep)];
@@ -365,7 +370,7 @@ export const CCar: React.FC = () => {
       <BombPack pos={[0, 0, -14.75]} s={1.3} armed f={f} />
       <SmokeCloud pos={[0, 0, -14.6]} t={1} f={f + 66} o={0.13} />
       {f >= ein && <Person look={enemyLook(5)} pos={epos} rotY={walking ? Math.PI / 2 : Math.PI / 2} pose={merge(walking ? walk(f * 0.3, 0.5) : kneel(), EXPR.neutral, walking ? aimPose({ armR: [1.2, 0.05, 0.4] }) : { armL: [1.0, 0.1, 0.9], armR: [1.0, 0.1, 0.9] })} onHead={<EnemyHelmet />} />}
-      <Person look={HERO()} pos={[4.7, 0, -8.5]} rotY={Math.PI - 0.4} pose={merge(crouch(), EXPR.neutral, { armR: [1.1, 0.1, 0.6], armL: [1.0, -0.2, 0.7], head: [-0.1, 0, 0] })} propR={<ToyRifle />} />
+      <Person look={HERO()} pos={[4.6, 0, -7.4]} rotY={Math.PI + 0.57} pose={merge(crouch(), EXPR.neutral, { armR: [1.1, 0.1, 0.6], armL: [1.0, -0.2, 0.7], head: [-0.1, 0, 0] })} propR={<ToyRifle />} />
     </Stage>
   );
 };
@@ -373,15 +378,17 @@ export const CCar: React.FC = () => {
 export const CKill: React.FC = () => {
   const { f, at } = useShot('c_kill');
   const k = at(B().kill_last);
-  const muzzle = [4.3, 1.45, -9.4];
+  const muzzle = [4.08, 1.45, -8.25];
   return (
     <Stage>
       <Lights look={DAY} center={[0, 0, -12]} size={30} frame={f} />
-      <Cam pos={[6.9 + kick(f, k, 6) * 0.05, 2.9, -5.2]} look={[0.4, 0.9, -14.4]} fov={42} />
+      <Cam pos={[lerp(6.9, 6.7, f / 42) + kick(f, k, 6) * 0.05, 3.6, lerp(-4.6, -4.9, f / 42)]} look={[0.2, 0.4, -14.4]} fov={40} />
       <DesertMap gate={1} />
       <BombPack pos={[0, 0, -14.75]} s={1.3} armed f={f} />
       <SmokeCloud pos={[0, 0, -14.6]} t={1} f={f + 200} o={0.13} />
-      <Person look={HERO()} pos={[4.7, 0, -8.6]} rotY={Math.PI - 0.55} pose={merge(EXPR.grin, aimPose())} propR={<ToyRifle />} />
+      <Person look={HERO()} pos={[4.6, 0, -7.4]} rotY={Math.PI + 0.57} pose={merge(EXPR.grin, aimPose())} propR={<ToyRifle />} />
+      {f < k + 5 && <Person look={enemyLook(5)} pos={[-0.3, 0, -14.6]} rotY={Math.PI / 2} pose={merge(kneel(), f >= k ? EXPR.shock : EXPR.neutral, { armL: [1.0, 0.1, 0.9], armR: [1.0, 0.1, 0.9] }, f >= k ? { body: [lerp(0.35, -0.6, clamp((f - k) / 4)), 0, 0.3], armL: [0.3, 2.3, 0.2], armR: [0.3, 2.3, 0.2] } : {})} onHead={<EnemyHelmet />} />}
+      {f >= k && f < k + 10 && <Stars pos={[-0.3, 1.3, -14.6]} f={f} />}
       <MuzzleFlash pos={muzzle} on={f >= k && f < k + 2} s={0.8} />
       <Tracer a={muzzle} b={[-0.3, 1.0, -14.6]} on={f >= k && f < k + 2} />
       <Puffs pos={[-0.3, 0.8, -14.6]} t={f >= k + 4 ? (f - k - 4) / 20 : 0} n={12} r={1} col="#ffe14a" o={0.9} s={0.6} seed={8} />
