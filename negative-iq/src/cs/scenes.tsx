@@ -398,7 +398,7 @@ export const CKill: React.FC = () => {
 // 18. clutch won
 export const CWin: React.FC = () => {
   const { f, dur } = useShot('c_win');
-  const a = lerp(-0.6, 0.6, smoother(f / dur));
+  const a = lerp(-0.75, 0.1, smoother(f / dur));
   const jump = Math.abs(Math.sin(f * 0.2));
   return (
     <Stage>
