@@ -6,7 +6,7 @@ import { useScreen } from '../three/props';
 import { Person, merge, EXPR, idle, walk, run, randomLook, Pose } from '../three/person';
 import { tl, shotById } from '../lib/tl';
 import { camK, ramp, lerp, rng, easeOut, easeIn, smoother, kick, clamp, hash } from '../lib/anim';
-import { Hall, Station, Text3D } from '../liberty/kit';
+import { Hall, Station, Text3D } from '../club/kit';
 import { DesertMap } from './map';
 import { HERO, ToyRifle, RifleOnGround, BombPack, Grenade, enemyLook, EnemyHelmet, aimPose, crouch, kneel, fall, sitGround, Puffs, SmokeCloud, MuzzleFlash, Tracer, Stars, Confetti, ScreenArm } from './actors';
 

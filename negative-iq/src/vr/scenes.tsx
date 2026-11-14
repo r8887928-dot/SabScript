@@ -8,7 +8,7 @@ import { rbox, Glow, Smoke } from '../three/props';
 import { StarField } from '../three/earth';
 import { shotById } from '../lib/tl';
 import { camK, ramp, lerp, rng, easeOut, smoother, kick, clamp, hash } from '../lib/anim';
-import { Text3D } from '../liberty/kit';
+import { Text3D } from '../club/kit';
 import { Headset, BigHeadset, VRPlayer, VR_LOOKS, glove, rifle, blaster, dance, Coin, Penguin, CowboyHat, Log, Palm, Star, gridTex, MAG, CYAN, VIO } from './props';
 
 const useShot = (id: string) => {

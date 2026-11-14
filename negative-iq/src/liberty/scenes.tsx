@@ -8,7 +8,8 @@ import { Room, rbox, useScreen, Screen, Glow, Lamp } from '../three/props';
 import { HERO } from '../game/scenes';
 import { shotById } from '../lib/tl';
 import { camK, ramp, lerp, rng, easeOut, smoother, kick, clamp, hash } from '../lib/anim';
-import { Hall, Station, Player, Facade, Text3D, ZONES, Zone, useGameTex } from './kit';
+import { Hall, Station, Player, Text3D, ZONES, Zone, useGameTex } from '../club/kit';
+import { Facade } from './facade';
 
 const CLUB = { ...LOOKS.studio, top: '#07050f', hor: '#140c26', bot: '#05040a', fog: '#0c0818', fogNear: 7, fogFar: 30, hemiSky: '#7c6cf7', hemiGround: '#100a20', hemiI: 0.6, sunI: 0.7, env: 0.35 };
 /** shot-relative clock that works in both versions (full / short) */

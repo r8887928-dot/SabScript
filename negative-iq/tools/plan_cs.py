@@ -124,7 +124,7 @@ cues = {n: {'t': round(float(t), 3), 'kind': k, 'gain': g} for n, t, k, g in CUE
 MUSIC = [('edm', 0.0, 3.8), ('tension', 3.8, 8.0), ('heavy', 8.0, 46.4), ('tension', 46.4, 58.4), ('finale', 58.4, 65.4), ('edm_big', 65.4, TOTAL)]
 music = [{'mood': m, 's': s, 'e': e} for m, s, e in MUSIC]
 
-tl = {'kind': 'liberty', 'fps': FPS, 'total': TOTAL, 'frames': TOTAL_FRAMES, 'voiceLen': TOTAL, 'voice': 'assets/voice_cs/voice.wav',
+tl = {'kind': 'club', 'fps': FPS, 'total': TOTAL, 'frames': TOTAL_FRAMES, 'voiceLen': TOTAL, 'voice': 'assets/voice_cs/voice.wav',
       'blocks': [{'vin': 0.0, 'vout': TOTAL, 'g': 0.0}], 'inserts': {'OUTRO': {'start': TOTAL, 'dur': 0}}, 'words': words, 'shots': shots,
       'chapters': [], 'subs': subs, 'cues': cues, 'music': music, 'red': [], 'beats': B, 'at': AT, 'flashCues': ['flash', 'land', 'hs_shot', 'win_hit'],
       'title': None, 'outro': None}

@@ -2,7 +2,7 @@ import React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { tl } from '../lib/tl';
 import { clamp, backOut, easeOut, lerp } from '../lib/anim';
-import { ZONES, ZONE_ORDER, Zone } from './kit';
+import { ZONES, ZONE_ORDER, Zone } from '../club/kit';
 
 const FONT = 'Montserrat, sans-serif';
 const TECH = '"Russo One", Montserrat, sans-serif';
