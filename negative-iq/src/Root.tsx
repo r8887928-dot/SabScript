@@ -11,6 +11,7 @@ import { NetMain, NET_FRAMES } from './net/NetMain';
 import { CoverNet } from './net/Cover';
 import { LibFull, LibShort, LIB_FULL_FRAMES, LIB_SHORT_FRAMES } from './liberty/LibMain';
 import { VrMain, VR_FRAMES } from './vr/VrMain';
+import { ParMain, PAR_FRAMES } from './parable/ParMain';
 import { CsMain, CS_FRAMES } from './cs/CsMain';
 import { CoverGame, ThumbGame } from './game/Cover';
 import TL_GAME from './game/timeline.json';
@@ -24,6 +25,8 @@ export const RemotionRoot: React.FC = () => (
     <Composition id="LibertyFull" component={LibFull} durationInFrames={LIB_FULL_FRAMES} fps={FPS} width={W} height={H} defaultProps={{}} />
     <Composition id="LibertyShort" component={LibShort} durationInFrames={LIB_SHORT_FRAMES} fps={FPS} width={W} height={H} defaultProps={{}} />
     <Composition id="VrZone" component={VrMain} durationInFrames={VR_FRAMES} fps={FPS} width={W} height={H} defaultProps={{ q: { res: 1 } }} />
+    <Composition id="Parable" component={ParMain} durationInFrames={PAR_FRAMES} fps={FPS} width={W} height={H} defaultProps={{ q: { res: 1 } }} />
+    <Composition id="ParablePreview" component={ParMain} durationInFrames={PAR_FRAMES} fps={FPS} width={W} height={H} defaultProps={{}} />
     <Composition id="VrZonePreview" component={VrMain} durationInFrames={VR_FRAMES} fps={FPS} width={W} height={H} defaultProps={{}} />
     <Composition id="ClubCs" component={CsMain} durationInFrames={CS_FRAMES} fps={FPS} width={W} height={H} defaultProps={{ q: { res: 1 } }} />
     <Composition id="ClubCsPreview" component={CsMain} durationInFrames={CS_FRAMES} fps={FPS} width={W} height={H} defaultProps={{}} />
