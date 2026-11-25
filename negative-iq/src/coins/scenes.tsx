@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { useCurrentFrame } from 'remotion';
-import { Stage, Lights, Cam, LOOKS, mat, basic, spr, radialTex } from '../three/core';
+import { Lights, Cam, LOOKS, mat, basic, spr, radialTex } from '../three/core';
 import { useScreen } from '../three/props';
-import { Person, merge, EXPR, idle, LookP, Pose } from '../three/person';
+import { PStage, Street, Sage as SageCard, Face } from './look';
 import { shotById, tl } from '../lib/tl';
 import { camK, lerp, rng, smoother, clamp, easeOut } from '../lib/anim';
 
@@ -15,17 +15,13 @@ const useShot = (id: string) => {
   const s = shotById(id) ?? { dur: 120, from: 0 };
   return { f, dur: s.dur as number, p: f / Math.max(1, s.dur), board: (s as any).board as string };
 };
-const WARM = { ...LOOKS.studio, top: '#2a160c', hor: '#3a2112', bot: '#1a0e07', fog: '#2a170c', fogNear: 9, fogFar: 30, hemiSky: '#ffd2a0', hemiGround: '#3a2212', hemiI: 0.75, sunI: 1.1, sun: '#ffd9a8', env: 0.4 };
+const WARM = { ...LOOKS.golden, sunAz: 35, sunEl: 26, sun: '#ffc184', sunI: 3.4, top: '#3d4c9c', hor: '#ffb877', bot: '#5a4060', fog: '#e7a07a', fogNear: 18, fogFar: 90, hemiSky: '#b8c2f0', hemiGround: '#7a5a3a', hemiI: 1.35, env: 0.55 };
 const TABLE_Y = 0.9;
 const SC = 0.62;
 const GOLD = '#e7b52c';
 
 // ------------------------------------------------------------------ character
-const SAGE: LookP = { skin: '#f6efe6', hair: '#6b4a2b', hairStyle: 'bald', shirt: '#7a3e1d', pants: '#2b2b2b', shoes: '#2a2a2a', tie: '#2e8b57', glasses: true };
-const Sage: React.FC<{ pos?: number[]; rotY?: number; pose?: Pose; propR?: React.ReactNode }> = ({ pos = [2.9, 0, 0.9], rotY = -0.5, pose = {}, propR }) => (
-  <Person look={SAGE} pos={pos} rotY={rotY} pose={pose} propR={propR} />
-);
-const SLY: Pose = { ...EXPR.grin, brows: [-0.3, 0.35, 0.02] };
+const Sage: React.FC<{ f: number; face?: Face; talk?: number; arm?: number; pos?: number[] }> = ({ f, face = 'sly', talk = 0.6, arm = 0, pos = [2.75, 0, 0.9] }) => <SageCard f={f} pos={pos} face={face} talk={talk} arm={arm} h={1.9} />;
 
 // ------------------------------------------------------------------ props
 const coinMat = () => mat(GOLD, { r: 0.28, m: 0.85 });
@@ -68,7 +64,7 @@ const Scale: React.FC<{ tilt: number; left?: React.ReactNode; right?: React.Reac
 };
 /** three coins in a little triangle on a pan / table */
 const Trio: React.FC<{ pos?: number[]; glow?: number; n?: number }> = ({ pos = [0, 0, 0], glow = 0, n = 3 }) => (
-  <group position={pos as any}>{[[-0.09, 0, 0.05], [0.09, 0, 0.05], [0, 0.0, -0.1]].slice(0, n).map((q, i) => <Coin key={i} pos={[q[0], 0.013 + (i === 2 ? 0.0 : 0), q[2]]} glow={glow} />)}</group>
+  <group position={pos as any}>{[[-0.125, 0, 0.07], [0.125, 0, 0.07], [0, 0, -0.13]].slice(0, n).map((q, i) => <Coin key={i} pos={[q[0], 0.013 + (i === 2 ? 0.0 : 0), q[2]]} glow={glow} />)}</group>
 );
 
 /** the flip board on the back wall (text from the shot) */
@@ -85,7 +81,7 @@ const Board: React.FC<{ text: string; f: number }> = ({ text, f }) => {
     });
   });
   return (
-    <group position={[0, 3.15, -2.15]}>
+    <group position={[0, 2.25, -0.62]} scale={[0.75, 0.75, 0.75]}>
       <mesh material={mat('#4a2c16', { r: 0.6 })}><boxGeometry args={[3.3, 1.35, 0.12]} /></mesh>
       <mesh position={[0, 0, 0.07]} scale={[1, Math.max(0.02, Math.abs(Math.cos((1 - flip) * Math.PI))), 1]} material={useMemo(() => new THREE.MeshBasicMaterial({ toneMapped: false }), [])}>
         <planeGeometry args={[3.05, 1.15]} />
@@ -98,37 +94,35 @@ const Board: React.FC<{ text: string; f: number }> = ({ text, f }) => {
 const Workshop: React.FC<{ f: number; board: string; bf: number }> = ({ f, board, bf }) => {
   const wood = useMemo(() => mat('#6b4124', { r: 0.75 }), []);
   const woodD = useMemo(() => mat('#3f2512', { r: 0.8 }), []);
-  const bottles = useMemo(() => { const r = rng(3); return Array.from({ length: 40 }).map((_, i) => ({ x: -4.6 + (i % 20) * 0.48 + (r() - 0.5) * 0.06, y: i < 20 ? 1.55 : 2.35, c: ['#2f5d3a', '#7a2a2a', '#2a4a7a', '#8a6a2a'][Math.floor(r() * 4)], h: 0.25 + r() * 0.15 })); }, []);
   return (
     <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} material={mat('#5a4a3e', { r: 0.9 })} receiveShadow><planeGeometry args={[30, 30]} /></mesh>
-      {Array.from({ length: 12 }).map((_, i) => <mesh key={'fl' + i} rotation={[-Math.PI / 2, 0, 0]} position={[-6 + i * 1.1, 0.002, 0]} material={mat(i % 2 ? '#4f4036' : '#5c4b3f', { r: 0.9 })} receiveShadow><planeGeometry args={[1.06, 30]} /></mesh>)}
-      <mesh position={[0, 2.5, -2.3]} material={mat('#8a5a35', { r: 0.85 })} receiveShadow><planeGeometry args={[14, 5]} /></mesh>
-      {[1.4, 2.2].map((y) => <mesh key={y} position={[0, y, -2.05]} material={wood} castShadow receiveShadow><boxGeometry args={[10, 0.06, 0.45]} /></mesh>)}
-      {bottles.map((b, i) => Math.abs(b.x) < 1.8 && b.y > 2 ? null : <mesh key={i} position={[b.x, b.y + b.h / 2 + 0.03, -2.05]} material={mat(b.c, { r: 0.2, m: 0.1 })} castShadow><cylinderGeometry args={[0.07, 0.08, b.h, 10]} /></mesh>)}
-      {[-6.8, 6.8].map((x) => <mesh key={x} position={[x, 2.5, 0]} rotation={[0, x < 0 ? Math.PI / 2 : -Math.PI / 2, 0]} material={mat('#7a4e2e', { r: 0.85 })}><planeGeometry args={[10, 5]} /></mesh>)}
-      {/* table */}
+      <Street f={f} />
       <mesh position={[0, TABLE_Y - 0.04, 0]} material={wood} castShadow receiveShadow><boxGeometry args={[4.6, 0.08, 1.4]} /></mesh>
-      {[[-2.1, -0.55], [2.1, -0.55], [-2.1, 0.55], [2.1, 0.55]].map(([x, z], i) => <mesh key={i} position={[x, (TABLE_Y - 0.08) / 2, z]} material={woodD} castShadow><boxGeometry args={[0.1, TABLE_Y - 0.08, 0.1]} /></mesh>)}
-      <mesh position={[0, TABLE_Y + 0.003, 0.05]} material={mat('#2e5a3a', { r: 0.95 })}><boxGeometry args={[3.2, 0.006, 1.0]} /></mesh>
+      <mesh position={[0, TABLE_Y / 2 - 0.04, 0.68]} material={woodD} castShadow><boxGeometry args={[4.6, TABLE_Y - 0.08, 0.06]} /></mesh>
+      {[[-2.1, -0.55], [2.1, -0.55]].map(([x, z], i) => <mesh key={i} position={[x, (TABLE_Y - 0.08) / 2, z]} material={woodD} castShadow><boxGeometry args={[0.1, TABLE_Y - 0.08, 0.1]} /></mesh>)}
+      <mesh position={[0, TABLE_Y + 0.004, 0.05]} material={mat('#2e5a3a', { r: 0.95 })}><boxGeometry args={[3.6, 0.008, 1.1]} /></mesh>
+      {[-2.25, 2.25].map((x) => <mesh key={'p' + x} position={[x, 1.6, -0.65]} material={woodD} castShadow><boxGeometry args={[0.1, 3.2, 0.1]} /></mesh>)}
+      {Array.from({ length: 8 }).map((_, i) => <mesh key={'cn' + i} position={[-2.3 + i * 0.575 + 0.29, 3.25, -0.1]} rotation={[0.35, 0, 0]} material={mat(i % 2 ? '#f3ead7' : '#b3262e', { r: 0.9, side: THREE.DoubleSide })} castShadow><planeGeometry args={[0.575, 1.4]} /></mesh>)}
       <Board text={board} f={bf} />
-      {/* lamps + string lights */}
-      {[-2.6, 2.6].map((x) => <group key={x} position={[x, 3.6, -1.2]}><mesh material={mat('#2b2b2b', { m: 0.5 })}><coneGeometry args={[0.28, 0.25, 16, 1, true]} /></mesh><mesh position={[0, -0.1, 0]} material={basic('#ffe2a8')}><sphereGeometry args={[0.09, 10, 8]} /></mesh><pointLight position={[0, -0.3, 0]} intensity={10} distance={7} color="#ffc37a" /></group>)}
-      {Array.from({ length: 18 }).map((_, i) => { const x = -4.2 + i * 0.5; return <sprite key={'b' + i} position={[x, 4.3 - Math.sin((i / 17) * Math.PI) * 0.45, -1.9]} scale={[0.22, 0.22, 1]} material={spr('#ffd27a', { map: radialTex('glow'), add: true, t: 0.75 + 0.25 * Math.sin(f * 0.1 + i) })} />; })}
-      <pointLight position={[0, 2.8, 1.8]} intensity={14} distance={9} color="#ffd9a8" />
-      {[[-3.6, 0, -1.6], [3.8, 0, -1.7]].map((p, i) => <group key={'pot' + i} position={p as any}><mesh position={[0, 0.25, 0]} material={mat('#a0522d')}><cylinderGeometry args={[0.22, 0.17, 0.5, 14]} /></mesh>{[0, 1, 2, 3, 4].map((k) => <mesh key={k} position={[Math.sin(k * 1.3) * 0.15, 0.65 + (k % 2) * 0.15, Math.cos(k * 1.3) * 0.15]} material={mat(k % 2 ? '#3f7d2a' : '#4f8a2b', { flat: true })}><icosahedronGeometry args={[0.2, 0]} /></mesh>)}</group>)}
     </group>
   );
 };
-const W = (f: number, ax: number, ay: number, az: number) => <Lights look={WARM} center={[ax, ay, az]} size={8} frame={f} noSky />;
-const T = TABLE_Y + 0.003;
-const ROW9 = Array.from({ length: 9 }).map((_, i) => [-1.2 + i * 0.3, T, 0.25]);
-const PILES = [[-1.0, T, 0.3], [0, T, 0.5], [1.0, T, 0.3]];
+const W = (f: number, ax: number, ay: number, az: number) => <Lights look={WARM} center={[ax, ay, az]} size={14} frame={f} />;
+const T = TABLE_Y + 0.008;
+const ROW9 = Array.from({ length: 9 }).map((_, i) => [-1.4 + i * 0.35, T, 0.25]);
+const PILES = [[-1.1, T, 0.3], [0, T, 0.45], [1.1, T, 0.3]];
 
 // ------------------------------------------------------------------ shots
-const Base: React.FC<{ f: number; board: string; c: any; tilt?: number; left?: React.ReactNode; right?: React.ReactNode; children?: React.ReactNode; far?: number }> = ({ f, board, c, tilt = 0, left, right, children, far = 1.45 }) => (
-  <Stage>{W(f, 0, 1, 0)}<Cam pos={c.pos.map((v: number, i: number) => c.look[i] + (v - c.look[i]) * far)} look={c.look} fov={c.fov} roll={c.roll} /><Workshop f={f} board={board} bf={f} /><Scale tilt={tilt} left={left} right={right} />{children}</Stage>
-);
+const Base: React.FC<{ f: number; board: string; c: any; tilt?: number; left?: React.ReactNode; right?: React.ReactNode; children?: React.ReactNode; far?: number; blur?: number }> = ({ f, board, c, tilt = 0, left, right, children, far = 1.45, blur = 3 }) => {
+  const fr = useCurrentFrame();
+  const fl = [Math.sin(fr * 0.021) * 0.06, Math.sin(fr * 0.017 + 1) * 0.04, Math.cos(fr * 0.013) * 0.05];
+  const pos = c.pos.map((v: number, i: number) => c.look[i] + (v - c.look[i]) * far + fl[i]);
+  const focus = Math.hypot(pos[0] - c.look[0], pos[1] - c.look[1], pos[2] - c.look[2]);
+  return (
+    <PStage focus={focus} blur={blur}>{W(f, 0, 1, 0)}<Cam pos={pos} look={c.look} fov={c.fov} roll={(c.roll ?? 0) + Math.sin(fr * 0.011) * 0.8} />
+      <Workshop f={f} board={board} bf={f} /><Scale tilt={tilt} left={left} right={right} />{children}</PStage>
+  );
+};
 export const CIntro: React.FC = () => {
   const { f, dur, board } = useShot('c_intro');
   const c = camK(f, [{ f: 0, p: [0, 1.6, 2.4], l: [0, 1.0, 0.2], fov: 44 }, { f: dur, p: [0, 1.7, 3.0], l: [0, 1.2, 0], fov: 46 }]);
@@ -147,19 +141,19 @@ export const CScaleShot: React.FC = () => {
 };
 export const CAsk: React.FC = () => {
   const { f, dur, board } = useShot('c_ask');
-  const c = camK(f, [{ f: 0, p: [2.2, 1.65, 2.6], l: [2.9, 1.55, 0.9], fov: 40 }, { f: dur, p: [2.4, 1.62, 2.2], l: [2.9, 1.58, 0.9], fov: 36 }]);
-  return <Base far={1} f={f} board={board} c={c}><Sage pose={merge(EXPR.confused, idle(f, 1), { armR: [1.7, 0.1, 2.2], head: [0, 0, 0.15] })} />{ROW9.map((p, i) => <Coin key={i} pos={[p[0], p[1] + 0.013, p[2]]} />)}</Base>;
+  const c = camK(f, [{ f: 0, p: [2.0, 1.55, 4.2], l: [2.75, 1.25, 0.9], fov: 40 }, { f: dur, p: [2.3, 1.5, 3.4], l: [2.75, 1.3, 0.9], fov: 38 }]);
+  return <Base far={1} f={f} board={board} c={c}><Sage f={f} face="think" arm={1} />{ROW9.map((p, i) => <Coin key={i} pos={[p[0], p[1] + 0.013, p[2]]} />)}</Base>;
 };
 export const CTrick: React.FC = () => {
   const { f, dur, board } = useShot('c_trick');
-  const c = camK(f, [{ f: 0, p: [2.3, 1.7, 2.3], l: [2.9, 1.65, 0.9], fov: 36 }, { f: dur, p: [2.55, 1.68, 1.9], l: [2.9, 1.68, 0.9], fov: 32 }]);
-  return <Base far={1} f={f} board={board} c={c}><Sage pose={merge(SLY, idle(f, 2), { armR: [1.9, 0.2, 1.7] })} /></Base>;
+  const c = camK(f, [{ f: 0, p: [2.0, 1.55, 4.2], l: [2.75, 1.25, 0.9], fov: 40 }, { f: dur, p: [2.3, 1.5, 3.4], l: [2.75, 1.3, 0.9], fov: 38 }]);
+  return <Base far={1} f={f} board={board} c={c}><Sage f={f} face="sly" arm={1.2} /></Base>;
 };
 export const CSplit: React.FC = () => {
   const { f, dur, board } = useShot('c_split');
   const c = camK(f, [{ f: 0, p: [0, 2.4, 1.9], l: [0, 0.9, 0.3], fov: 46 }, { f: dur, p: [0, 2.2, 1.6], l: [0, 0.9, 0.35], fov: 44 }]);
   const t = smoother(clamp((f - 30) / 40));
-  return <Base f={f} board={board} c={c}>{ROW9.map((p, i) => { const pile = PILES[Math.floor(i / 3)]; const off = [[-0.11, 0.06], [0.11, 0.06], [0, -0.1]][i % 3]; return <Coin key={i} pos={[lerp(p[0], pile[0] + off[0], t), p[1] + 0.013 + Math.sin(t * Math.PI) * 0.15, lerp(p[2], pile[2] + off[1], t)]} />; })}</Base>;
+  return <Base f={f} board={board} c={c}>{ROW9.map((p, i) => { const pile = PILES[Math.floor(i / 3)]; const off = [[-0.125, 0.07], [0.125, 0.07], [0, -0.13]][i % 3]; return <Coin key={i} pos={[lerp(p[0], pile[0] + off[0], t), p[1] + 0.013 + Math.sin(t * Math.PI) * 0.15, lerp(p[2], pile[2] + off[1], t)]} />; })}</Base>;
 };
 const panTrio = (glow = 0) => <Trio glow={glow} />;
 export const CPlace: React.FC = () => {
@@ -169,7 +163,7 @@ export const CPlace: React.FC = () => {
   return (
     <Base f={f} board={board} c={c} left={l1 ? panTrio() : null} right={r1 ? panTrio() : null}>
       {!l1 && <Trio pos={PILES[0]} />}{!r1 && <Trio pos={PILES[2]} />}
-      <Trio pos={[0, T, 0.55]} />
+      <Trio pos={[0, T, 0.45]} />
     </Base>
   );
 };
@@ -177,13 +171,13 @@ export const CBalance: React.FC = () => {
   const { f, dur, board } = useShot('c_balance');
   const c = camK(f, [{ f: 0, p: [0, 1.9, 2.9], l: [0, 1.25, 0.2], fov: 46 }, { f: dur, p: [0, 1.6, 2.2], l: [0, 1.05, 0.4], fov: 42 }]);
   const tilt = Math.sin(f * 0.15) * 0.25 * Math.exp(-f * 0.03);
-  return <Base f={f} board={board} c={c} tilt={tilt} left={panTrio()} right={panTrio()}><Trio pos={[0, T, 0.55]} glow={f > 40 ? 0.7 + 0.3 * Math.sin(f * 0.2) : 0} /></Base>;
+  return <Base f={f} board={board} c={c} tilt={tilt} left={panTrio()} right={panTrio()}><Trio pos={[0, T, 0.45]} glow={f > 40 ? 0.7 + 0.3 * Math.sin(f * 0.2) : 0} /></Base>;
 };
 export const CTilt: React.FC = () => {
   const { f, dur, board } = useShot('c_tilt');
   const c = camK(f, [{ f: 0, p: [0.4, 1.8, 2.8], l: [0, 1.35, 0], fov: 46 }, { f: dur, p: [0.8, 1.9, 2.4], l: [0.4, 1.45, 0], fov: 42 }]);
   const tilt = easeOut(clamp((f - 10) / 20));
-  return <Base f={f} board={board} c={c} tilt={tilt} left={panTrio()} right={panTrio(f > 40 ? 0.8 : 0)}><Trio pos={[0, T, 0.55]} /></Base>;
+  return <Base f={f} board={board} c={c} tilt={tilt} left={panTrio()} right={panTrio(f > 40 ? 0.8 : 0)}><Trio pos={[0, T, 0.45]} /></Base>;
 };
 export const CThree: React.FC = () => {
   const { f, dur, board } = useShot('c_three');
@@ -192,8 +186,8 @@ export const CThree: React.FC = () => {
 };
 export const CAgain: React.FC = () => {
   const { f, dur, board } = useShot('c_again');
-  const c = camK(f, [{ f: 0, p: [2.3, 1.7, 2.3], l: [2.9, 1.6, 0.9], fov: 38 }, { f: dur, p: [2.5, 1.68, 2.0], l: [2.9, 1.62, 0.9], fov: 34 }]);
-  return <Base far={1} f={f} board={board} c={c}><Sage pose={merge(SLY, idle(f, 3), { armR: [1.2, 0.3, 0.4] })} /><Trio pos={[0, T, 0.4]} /></Base>;
+  const c = camK(f, [{ f: 0, p: [2.0, 1.55, 4.2], l: [2.75, 1.25, 0.9], fov: 40 }, { f: dur, p: [2.3, 1.5, 3.4], l: [2.75, 1.3, 0.9], fov: 38 }]);
+  return <Base far={1} f={f} board={board} c={c}><Sage f={f} face="grin" arm={0.5} /><Trio pos={[0, T, 0.4]} /></Base>;
 };
 export const CSecond: React.FC = () => {
   const { f, dur, board } = useShot('c_second');
@@ -220,8 +214,8 @@ export const CEq: React.FC = () => {
 };
 export const CWhy: React.FC = () => {
   const { f, dur, board } = useShot('c_why');
-  const c = camK(f, [{ f: 0, p: [2.2, 1.72, 2.0], l: [2.9, 1.7, 0.9], fov: 32 }, { f: dur, p: [2.35, 1.72, 1.8], l: [2.9, 1.72, 0.9], fov: 30 }]);
-  return <Base far={1} f={f} board={board} c={c}><Sage pose={merge(SLY, { armR: [1.9, 0.15, 1.8] })} /></Base>;
+  const c = camK(f, [{ f: 0, p: [2.0, 1.55, 4.2], l: [2.75, 1.25, 0.9], fov: 40 }, { f: dur, p: [2.3, 1.5, 3.4], l: [2.75, 1.3, 0.9], fov: 38 }]);
+  return <Base far={1} f={f} board={board} c={c}><Sage f={f} face="wow" arm={1.2} /></Base>;
 };
 export const CMath: React.FC = () => {
   const { f, dur, board } = useShot('c_math');
@@ -232,8 +226,8 @@ export const CMath: React.FC = () => {
 };
 export const CEnd: React.FC = () => {
   const { f, dur, board } = useShot('c_end');
-  const c = camK(f, [{ f: 0, p: [2.3, 1.7, 3.6], l: [2.75, 1.45, 0.9], fov: 42 }, { f: dur, p: [2.5, 1.7, 2.7], l: [2.85, 1.55, 0.9], fov: 38 }]);
-  return <Base far={1} f={f} board={board} c={c}><Sage pose={merge(EXPR.grin, idle(f, 4), { armR: [2.2, 0.25, 0.3] })} propR={<group position={[0, -0.12, 0.04]} rotation={[Math.PI / 2, 0, 0]}><Coin pos={[0, 0, 0]} glow={0.8} /></group>} />{ROW9.slice(0, 8).map((p, i) => <Coin key={i} pos={[p[0] - 0.5, p[1] + 0.013, p[2]]} />)}</Base>;
+  const c = camK(f, [{ f: 0, p: [2.0, 1.55, 4.2], l: [2.75, 1.25, 0.9], fov: 40 }, { f: dur, p: [2.3, 1.5, 3.4], l: [2.75, 1.3, 0.9], fov: 38 }]);
+  return <Base far={1} f={f} board={board} c={c}><Sage f={f} face="grin" arm={1.4} />{ROW9.slice(0, 8).map((p, i) => <Coin key={i} pos={[p[0] - 0.5, p[1] + 0.013, p[2]]} />)}</Base>;
 };
 
 export const COIN_SCENES: Record<string, React.FC> = {
