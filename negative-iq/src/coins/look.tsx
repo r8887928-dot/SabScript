@@ -27,50 +27,70 @@ export const PStage: React.FC<{ children: React.ReactNode; focus?: number; blur?
 // ------------------------------------------------------------------ the 2D character card
 export type Face = 'sly' | 'grin' | 'think' | 'wow' | 'talk';
 const INK = '#241726';
-function drawSage(g: CanvasRenderingContext2D, w: number, h: number, face: Face, mouthOpen: number, arm: number) {
+function drawSage(g: CanvasRenderingContext2D, w: number, h: number, face: Face, mouthOpen: number, arm: number, blink = false) {
   g.clearRect(0, 0, w, h);
   g.lineCap = 'round'; g.lineJoin = 'round';
   const cx = w / 2;
-  // legs
-  g.strokeStyle = INK; g.lineWidth = 14;
-  g.beginPath(); g.moveTo(cx - 40, 690); g.lineTo(cx - 48, 960); g.moveTo(cx + 40, 690); g.lineTo(cx + 50, 960); g.stroke();
-  g.fillStyle = INK; for (const x of [cx - 48, cx + 50]) { g.beginPath(); g.ellipse(x + 14, 966, 34, 14, 0, 0, 7); g.fill(); }
-  // body: vest bean
-  g.fillStyle = '#7a3e1d'; g.strokeStyle = INK; g.lineWidth = 12;
-  g.beginPath(); g.ellipse(cx, 590, 150, 165, 0, 0, Math.PI * 2); g.fill(); g.stroke();
-  g.fillStyle = '#f4efe2'; g.beginPath(); g.moveTo(cx - 55, 440); g.lineTo(cx, 560); g.lineTo(cx + 55, 440); g.closePath(); g.fill();
-  g.fillStyle = '#2e8b57'; g.beginPath(); g.moveTo(cx - 34, 452); g.lineTo(cx, 470); g.lineTo(cx - 34, 488); g.closePath(); g.fill(); g.beginPath(); g.moveTo(cx + 34, 452); g.lineTo(cx, 470); g.lineTo(cx + 34, 488); g.closePath(); g.fill();
-  g.fillStyle = '#e7b52c'; for (const y of [580, 630, 680]) { g.beginPath(); g.arc(cx, y, 9, 0, 7); g.fill(); }
-  // arms (stick)
-  g.lineWidth = 12; g.beginPath(); g.moveTo(cx - 140, 560); g.lineTo(cx - 190, 720); g.stroke();
-  const ax = cx + 140, ay = 540, ex = ax + 70 + arm * 10, ey = ay - arm * 150 + 120;
+  // legs: thin sticks + small dark shoes
+  g.strokeStyle = INK; g.lineWidth = 12;
+  g.beginPath(); g.moveTo(cx - 38, 760); g.lineTo(cx - 44, 960); g.moveTo(cx + 38, 760); g.lineTo(cx + 46, 960); g.stroke();
+  g.fillStyle = INK; for (const x of [cx - 44, cx + 46]) { g.beginPath(); g.ellipse(x + 12, 966, 30, 13, 0, 0, 7); g.fill(); }
+  // body: blue suit bean
+  g.fillStyle = '#2f4fae'; g.strokeStyle = INK; g.lineWidth = 12;
+  g.beginPath(); g.ellipse(cx, 640, 120, 150, 0, 0, Math.PI * 2); g.fill(); g.stroke();
+  g.fillStyle = 'rgba(0,0,0,0.16)'; g.beginPath(); g.ellipse(cx + 55, 660, 60, 130, 0, 0, 7); g.fill();
+  // shirt V + red tie + lapels
+  g.fillStyle = '#f7f3ec'; g.beginPath(); g.moveTo(cx - 50, 500); g.lineTo(cx, 610); g.lineTo(cx + 50, 500); g.closePath(); g.fill();
+  g.fillStyle = '#d8332b'; g.beginPath(); g.moveTo(cx - 14, 510); g.lineTo(cx + 14, 510); g.lineTo(cx + 9, 530); g.lineTo(cx + 20, 650); g.lineTo(cx, 672); g.lineTo(cx - 20, 650); g.lineTo(cx - 9, 530); g.closePath(); g.fill();
+  g.strokeStyle = INK; g.lineWidth = 5; g.stroke();
+  g.lineWidth = 7; g.beginPath(); g.moveTo(cx - 50, 500); g.lineTo(cx - 8, 600); g.moveTo(cx + 50, 500); g.lineTo(cx + 8, 600); g.stroke();
+  // arms: sticks with ink-dot hands
+  g.lineWidth = 11;
+  g.beginPath(); g.moveTo(cx - 112, 600); g.lineTo(cx - 165, 760); g.stroke();
+  const ax = cx + 112, ay = 590, ex = ax + 60 + arm * 12, ey = ay - arm * 170 + 150;
   g.beginPath(); g.moveTo(ax, ay); g.lineTo(ex, ey); g.stroke();
-  g.fillStyle = INK; g.beginPath(); g.arc(cx - 190, 722, 14, 0, 7); g.fill(); g.beginPath(); g.arc(ex, ey, 14, 0, 7); g.fill();
-  // head: big bean, slightly narrower chin
-  g.fillStyle = '#f7f3ec'; g.lineWidth = 13;
-  g.beginPath(); g.moveTo(cx, 40); g.bezierCurveTo(cx + 250, 40, cx + 245, 400, cx + 30, 430); g.bezierCurveTo(cx - 40, 438, cx - 245, 410, cx - 240, 220); g.bezierCurveTo(cx - 236, 80, cx - 120, 40, cx, 40); g.closePath(); g.fill(); g.stroke();
-  g.fillStyle = 'rgba(160,120,110,0.18)'; g.beginPath(); g.ellipse(cx + 120, 300, 90, 120, 0.3, 0, 7); g.fill();
-  // eyes + glasses
-  const sly = face === 'sly' || face === 'grin';
-  for (const [x, s] of [[cx - 80, -1], [cx + 70, 1]] as const) {
-    g.fillStyle = '#fff'; g.beginPath(); g.ellipse(x, 230, 44, sly ? 22 : 40, 0, 0, 7); g.fill();
-    g.fillStyle = INK; g.beginPath(); g.arc(x + (face === 'think' ? -12 : 8), sly ? 234 : 232, sly ? 14 : 17, 0, 7); g.fill();
-    g.strokeStyle = '#5a3a1a'; g.lineWidth = 9; g.beginPath(); g.arc(x, 230, 56, 0, 7); g.stroke();
-    // brows
-    g.strokeStyle = INK; g.lineWidth = 13; g.beginPath();
-    const tilt = face === 'sly' ? s * 18 : face === 'think' ? -s * 10 : face === 'wow' ? 0 : s * 6;
-    g.moveTo(x - 46, 160 - tilt - (face === 'wow' ? 20 : 0)); g.lineTo(x + 46, 160 + tilt - (face === 'wow' ? 20 : 0)); g.stroke();
-  }
-  g.strokeStyle = '#5a3a1a'; g.lineWidth = 8; g.beginPath(); g.moveTo(cx - 24, 226); g.quadraticCurveTo(cx - 5, 214, cx + 14, 226); g.stroke();
-  // mouth
-  g.strokeStyle = INK; g.lineWidth = 11; g.fillStyle = '#5a1f2a';
-  if (face === 'grin' || face === 'sly') {
-    g.beginPath(); g.moveTo(cx - 70, 335); g.quadraticCurveTo(cx, 360 + mouthOpen * 40, cx + 75, 320); g.stroke();
-    if (face === 'grin') { g.fillStyle = '#fff'; g.beginPath(); g.moveTo(cx - 60, 336); g.quadraticCurveTo(cx, 372, cx + 66, 324); g.lineTo(cx + 60, 312); g.quadraticCurveTo(cx, 345, cx - 56, 325); g.fill(); g.stroke(); }
-  } else if (face === 'wow' || mouthOpen > 0.3) {
-    g.beginPath(); g.ellipse(cx, 345, 30, 20 + mouthOpen * 18, 0, 0, 7); g.fill(); g.stroke();
+  g.fillStyle = INK; g.beginPath(); g.arc(cx - 165, 762, 13, 0, 7); g.fill(); g.beginPath(); g.arc(ex, ey, 13, 0, 7); g.fill();
+  // head: huge white bean, crown slightly pointed, narrower chin
+  g.fillStyle = '#f9f7f2'; g.strokeStyle = INK; g.lineWidth = 13;
+  g.beginPath(); g.moveTo(cx + 10, 18); g.bezierCurveTo(cx + 275, 22, cx + 270, 450, cx + 30, 488); g.bezierCurveTo(cx - 70, 500, cx - 270, 440, cx - 262, 240); g.bezierCurveTo(cx - 256, 70, cx - 120, 14, cx + 10, 18); g.closePath(); g.fill(); g.stroke();
+  // shading on the shadow side + a brown hair patch
+  g.save(); g.clip(); g.fillStyle = 'rgba(150,140,150,0.18)'; g.beginPath(); g.ellipse(cx + 190, 300, 110, 220, 0.2, 0, 7); g.fill();
+  g.fillStyle = '#9a5a2a'; g.beginPath(); g.ellipse(cx + 170, 110, 90, 70, 0.5, 0, 7); g.fill(); g.restore();
+  // brows (thick, one raised)
+  const sly = face === 'sly' || face === 'grin' || face === 'talk';
+  g.strokeStyle = INK; g.lineWidth = 16;
+  const by = face === 'wow' ? -24 : 0;
+  g.beginPath(); g.moveTo(cx - 150, 205 + by + (sly ? 10 : 0)); g.quadraticCurveTo(cx - 95, 182 + by, cx - 40, 200 + by + (sly ? 18 : 0)); g.stroke();
+  g.beginPath(); g.moveTo(cx + 40, 185 + by - (face === 'think' ? 10 : 0)); g.quadraticCurveTo(cx + 100, 150 + by, cx + 160, 172 + by); g.stroke();
+  // left eye: squint or open
+  const lx = cx - 95, rx = cx + 100, ey0 = 260;
+  if (blink) {
+    g.lineWidth = 10; g.beginPath(); g.moveTo(lx - 38, ey0); g.lineTo(lx + 38, ey0); g.moveTo(rx - 38, ey0); g.lineTo(rx + 38, ey0); g.stroke();
   } else {
-    g.beginPath(); g.moveTo(cx - 40, 345); g.quadraticCurveTo(cx, 335 + (face === 'think' ? 10 : -6), cx + 40, 345); g.stroke();
+    g.fillStyle = '#fff'; g.lineWidth = 8;
+    g.beginPath(); g.ellipse(lx, ey0, 42, sly ? 18 : 38, 0, 0, 7); g.fill(); g.stroke();
+    g.fillStyle = INK; g.beginPath(); g.arc(lx + (face === 'think' ? -10 : 10), ey0 + 2, sly ? 13 : 16, 0, 7); g.fill();
+    if (sly) { g.lineWidth = 10; g.beginPath(); g.moveTo(lx - 46, ey0 - 12); g.lineTo(lx + 46, ey0 - 16); g.stroke(); }
+    g.fillStyle = '#fff'; g.lineWidth = 8; g.beginPath(); g.ellipse(rx, ey0, 44, 42, 0, 0, 7); g.fill(); g.stroke();
+    g.fillStyle = INK; g.beginPath(); g.arc(rx + (face === 'think' ? -10 : 8), ey0 + 2, 17, 0, 7); g.fill();
+  }
+  // monocle on the right eye + chain
+  g.strokeStyle = '#d4a017'; g.lineWidth = 12; g.beginPath(); g.arc(rx, ey0, 62, 0, 7); g.stroke();
+  g.strokeStyle = '#8a6510'; g.lineWidth = 3; g.beginPath(); g.arc(rx, ey0, 68, 0, 7); g.stroke();
+  g.fillStyle = 'rgba(200,230,255,0.18)'; g.beginPath(); g.arc(rx, ey0, 56, 0, 7); g.fill();
+  g.strokeStyle = '#d4a017'; g.lineWidth = 5; g.setLineDash([10, 6]);
+  g.beginPath(); g.moveTo(rx + 40, ey0 + 48); g.bezierCurveTo(rx + 70, 430, rx + 20, 520, cx + 40, 560); g.stroke(); g.setLineDash([]);
+  // mouth
+  g.strokeStyle = INK; g.lineWidth = 11;
+  if (face === 'grin' || (face === 'sly' && mouthOpen > 0.2)) {
+    g.fillStyle = '#fff'; g.beginPath(); g.moveTo(cx - 90, 372); g.quadraticCurveTo(cx, 420 + mouthOpen * 20, cx + 100, 360); g.quadraticCurveTo(cx, 388, cx - 90, 372); g.closePath(); g.fill(); g.stroke();
+    g.lineWidth = 5; for (const x of [-50, -15, 20, 55]) { g.beginPath(); g.moveTo(cx + x, 376 + Math.abs(x) * -0.05); g.lineTo(cx + x, 398 - Math.abs(x) * 0.18); g.stroke(); }
+  } else if (face === 'sly') {
+    g.beginPath(); g.moveTo(cx - 70, 385); g.quadraticCurveTo(cx + 10, 400, cx + 90, 360); g.stroke();
+  } else if (face === 'wow' || mouthOpen > 0.3) {
+    g.fillStyle = '#5a1f2a'; g.beginPath(); g.ellipse(cx, 385, 30, 18 + mouthOpen * 20, 0, 0, 7); g.fill(); g.stroke();
+  } else {
+    g.beginPath(); g.moveTo(cx - 45, 388); g.quadraticCurveTo(cx, 376 + (face === 'think' ? 16 : -4), cx + 45, 388); g.stroke();
   }
 }
 /** the narrator as a camera-facing flat card (600×1000 design canvas, soles at y 975) */
@@ -78,7 +98,7 @@ export const Sage: React.FC<{ pos: number[]; h?: number; face?: Face; talk?: num
   const blink = (f % 71) < 3;
   const mo = talk > 0 ? Math.max(0, Math.sin(f * 0.9)) * talk : 0;
   const key = `sage_${face}_${Math.round(mo * 4)}_${Math.round(arm * 4)}_${blink ? 1 : 0}`;
-  const tex = canvasTex(key, 600, 1000, (g, w, hh) => { drawSage(g, w, hh, face, mo, arm); if (blink) { g.fillStyle = '#f7f3ec'; g.fillRect(w / 2 - 140, 186, 290, 70); g.strokeStyle = INK; g.lineWidth = 9; for (const x of [w / 2 - 80, w / 2 + 70]) { g.beginPath(); g.moveTo(x - 40, 232); g.lineTo(x + 40, 232); g.stroke(); g.strokeStyle = '#5a3a1a'; g.beginPath(); g.arc(x, 230, 56, 0, 7); g.stroke(); g.strokeStyle = INK; } } });
+  const tex = canvasTex(key, 600, 1000, (g, w, hh) => drawSage(g, w, hh, face, mo, arm, blink));
   const w = h * 0.6;
   const m = useMemo(() => new THREE.MeshStandardMaterial({ transparent: true, alphaTest: 0.5, roughness: 0.9, side: THREE.DoubleSide }), []);
   m.map = tex; m.needsUpdate = true;
