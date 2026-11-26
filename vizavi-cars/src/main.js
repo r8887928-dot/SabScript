@@ -50,8 +50,8 @@ function updateCar(c, t, asmT, lightsOn) {
   for (const w of c.wheels) { const a = -(st.x) / w.userData.R * (w.userData.dir || 1); if (w.userData.spinAxis === 'z') w.userData.spin.rotation.z = a; else w.userData.spin.rotation.y = a; }
   const L = c.lightMats;
   (L.drl || []).forEach((m) => (m.emissiveIntensity = 3 * lightsOn));
-  (L.lens || []).forEach((m) => (m.emissiveIntensity = 4 * lightsOn));
-  (L.tail || []).forEach((m) => (m.emissiveIntensity = 3.5 * lightsOn));
+  (L.lens || []).forEach((m) => (m.emissiveIntensity = (m.userData.baseEI !== undefined ? m.userData.baseEI * 1.5 : 4) * lightsOn));
+  (L.tail || []).forEach((m) => (m.emissiveIntensity = (m.userData.baseEI !== undefined ? m.userData.baseEI * 2 : 3.5) * lightsOn));
   if (L.glowMat) L.glowMat.emissiveIntensity = 3 * lightsOn;
   c.heads.forEach((s) => (s.intensity = 90 * lightsOn));
   return st;
