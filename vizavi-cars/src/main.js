@@ -1,5 +1,6 @@
 // Сцена ролика: мир + две машины + сборка + гонка + камера. renderFrame(n) зависит только от n.
 import * as THREE from 'three';
+import { makeSubs } from './subs.js';
 import { createEngine, drawFrame } from './engine.js';
 import { buildCar, assemble } from './cars.js';
 import { makeEnv } from './env.js';
@@ -8,7 +9,7 @@ import { loadModel, carFromModel } from './model.js';
 import { FPS, FRAMES, T, SCENES, LANE, carX, camAt, timeRate } from './timeline.js';
 
 const q = new URLSearchParams(location.search);
-const vertical = q.get('fmt') === 'v';
+const vertical = (window.VZ_FMT || q.get('fmt')) === 'v';
 const W = +(q.get('w') || (vertical ? 1080 : 1920)), H = +(q.get('h') || (vertical ? 1920 : 1080));
 const E = createEngine({ width: W, height: H, fps: FPS });
 document.body.appendChild(E.renderer.domElement);
@@ -17,6 +18,8 @@ scene.background = new THREE.Color('#0a0e18');
 scene.fog = new THREE.FogExp2('#0b1222', 0.0035);
 const envH = makeEnv(E.renderer, 'hangar'), envN = makeEnv(E.renderer, 'night'), envD = makeEnv(E.renderer, 'dawn');
 scene.environment = envH;
+const VOICE = window.VZ_VOICE || await (await fetch('zvuk/voice/voice.json')).json();
+const drawSubs = makeSubs(VOICE.RACE, vertical);
 const camera = new THREE.PerspectiveCamera(30, W / H, 0.08, 3000);
 const world = buildWorld(scene);
 // готовые модели: ?bmw=models/bmw.glb&bmwYaw=1.5708 (если присланы), иначе машины кодом
@@ -86,9 +89,9 @@ const W3 = {
     const outside = t > T.gate;
     const midX = (bmw.root.position.x + amg.root.position.x) / 2;
     const near = world.towers.slice().sort((a, b) => Math.abs(a.x - midX - 10) - Math.abs(b.x - midX - 10)).slice(0, 3);
-    world.flood.forEach((l, i) => { const tw = near[i]; l.position.set(tw.x, 16, tw.z * 0.97); l.target.position.set(tw.x + 6, 0, 0); l.intensity = outside ? 1100 : 0; });
+    world.flood.forEach((l, i) => { const tw = near[i]; l.position.set(tw.x, 16, tw.z * 0.97); l.target.position.set(tw.x + 6, 0, 0); l.intensity = outside ? 700 : 0; });
     if (!world.chase) { world.chase = new THREE.SpotLight(0xdfe8ff, 0, 60, 0.5, 0.8, 1.3); scene.add(world.chase, world.chase.target); }
-    world.chase.position.set(midX + 4, 5.5, 13); world.chase.target.position.set(midX, 0.6, 0); world.chase.intensity = t > T.stage - 2 ? 900 : 0;
+    world.chase.position.set(midX + 4, 5.5, 13); world.chase.target.position.set(midX, 0.6, 0); world.chase.intensity = t > T.stage - 2 ? 520 : 0;
     const dawn = ramp(t, T.finale, T.end - 3);
     world.skyMat.uniforms.dawn.value = dawn; world.stars.material.opacity = 0.85 * (1 - dawn);
     world.lights.moon.intensity = outside ? 0.5 + dawn * 2.2 : 0; world.lights.moon.color.set(dawn > 0.3 ? '#ffc9a0' : '#9fb4ff');
@@ -120,21 +123,35 @@ const W3 = {
   jitterLights(k, N) { const d = E.disc(k, N); world.lights.key.position.set(-7 + d[0] * 0.5, 6.6, -7 + d[1] * 0.5); },
   post(t) {
     const flash = Math.max(0, 1 - Math.abs(t - 6.95) / 0.25) * 3 + Math.max(0, 1 - Math.abs(t - (T.lights + 0.15)) / 0.3) * 0.6;
-    return { exposure: (t > T.gate + 8 ? 1.15 : 0.82) * settings.exposure, bloom: 0.22 * settings.bloom, bloomThreshold: 2.2, bloomRadius: 0.35, vignette: 0.22 * settings.vignette, grain: 0.035 * settings.grain, flash, fade: Math.max(0, (t - 179) / 1) };
+    return { exposure: (t > T.gate + 8 ? 0.95 : 0.82) * settings.exposure, bloom: 0.22 * settings.bloom, bloomThreshold: 2.2, bloomRadius: 0.35, vignette: 0.22 * settings.vignette, grain: 0.035 * settings.grain, flash, fade: Math.max(0, (t - 179) / 1) };
   },
-  overlay() {},
+  overlay(g, t, n, w, h) { drawSubs(g, t, w, h); },
 };
 let quality = 8;
 const renderFrame = (n) => drawFrame(E, W3, n, quality);
 const aimCamera = (n) => { const t = n / FPS; W3.update(t); const c = camAt(t, vertical); camera.position.set(...c.pos); camera.lookAt(...c.look); camera.fov = c.fov; camera.updateProjectionMatrix(); };
 const range = (name, key, max = 2) => ({ name, type: 'range', min: 0, max, step: 0.05, get: () => settings[key], set: (v) => { settings[key] = v; } });
+// журнал звуковых событий: [время, тип, сила 0–1, панорама −1…1]
+function events() {
+  const ev = [];
+  for (const [c, st, pan] of [[bmw, T.asmB + 0.6, -0.3], [amg, T.asmA + 0.4, 0.3]]) {
+    for (const p of c.parts) { const tl = st + (p.delay + p.dur) / 0.62; if (tl < T.lights) ev.push([tl, p.heavy > 0.35 ? 'impact_metal' : p.heavy > 0.12 ? 'bolt' : 'tick', Math.min(1, 0.3 + p.heavy), pan]); }
+    for (const w of c.wheels) { const tl = st + (w.userData.delay + w.userData.dur) / 0.62; ev.push([tl, 'impact_metal', 0.8, pan], [tl + 0.25, 'air_wrench', 0.7, pan]); }
+  }
+  ev.push([6.95, 'boom', 1, 0], [T.lights + 0.1, 'light_on', 0.9, 0], [T.lights + 0.3, 'engine_start', 0.7, -0.3], [T.lights + 1.4, 'engine_start', 0.7, 0.3]);
+  for (const s of [54, 66, 78, 90]) ev.push([s, 'whoosh', 0.6, 0], [s + 0.6, 'engine_rev', 0.8, s % 24 ? 0.3 : -0.3]);
+  ev.push([T.gate + 1, 'roller_door', 1, 0], [T.roll, 'engine_rev', 0.7, 0], [T.stage - 1, 'whoosh', 0.5, 0], [128, 'engine_rev', 0.9, -0.3], [129.5, 'engine_rev', 0.9, 0.3]);
+  ev.push([131.05, 'beep', 0.8, 0], [131.85, 'beep', 0.8, 0], [132.7, 'beep', 0.8, 0], [T.go, 'beep_go', 1, 0], [T.go, 'tire', 1, 0], [T.go + 0.05, 'boom', 0.9, 0], [T.go + 0.1, 'engine_rev_slow', 1, 0]);
+  ev.push([142, 'passby', 0.9, 0.6], [144.7, 'passby', 1, 0], [147.2, 'whoosh', 0.7, 0], [150.6, 'passby', 0.9, -0.5], [154.4, 'passby_slow', 1, 0.2], [157.1, 'passby_slow', 0.9, 0.2], [T.finale + 0.2, 'boom', 0.7, 0]);
+  return ev.sort((a, b) => a[0] - b[0]);
+}
 window.vizaviScene = {
   title: 'BMW M6 GT3 против Mercedes-AMG ONE', fps: FPS, frames: FRAMES, width: W, height: H, saveQuality: 24,
   canvas: E.renderer.domElement, three: THREE, scene, camera, renderFrame, setQuality: (s) => { quality = s; }, aimCamera,
   sceneKnobs: [range('Яркость кадра', 'exposure'), range('Размытие фона', 'blur'), range('Свечение бликов', 'bloom'), range('Виньетка', 'vignette'), range('Зерно', 'grain'), range('Лампы ангара', 'lamps')],
   shots: SCENES.map(([name, a, b]) => ({ name, from: Math.round(a * FPS), to: Math.round(b * FPS) - 1, knobs: [] })),
-  audio: [],
+  audio: window.VZ_AUDIO || [],
   // для локальной проверки
-  E, world: W3, drawFrame: (n, N) => drawFrame(E, W3, n, N),
+  events, E, world: W3, drawFrame: (n, N) => drawFrame(E, W3, n, N),
 };
 window.sceneReady = true;

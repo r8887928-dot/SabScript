@@ -1,5 +1,6 @@
 // Ролик 2: «Что внутри» — разборка BMW M5 Competition и Mercedes CLS 63 AMG S в гараже.
 import * as THREE from 'three';
+import { makeSubs } from './subs.js';
 import { createEngine, drawFrame } from './engine.js';
 import { makeEnv } from './env.js';
 import { buildWorld } from './world.js';
@@ -7,13 +8,15 @@ import { loadModel, carFromModel } from './model.js';
 import { buildV8 } from './engine_v8.js';
 
 const q = new URLSearchParams(location.search);
-const vertical = q.get('fmt') === 'v';
+const vertical = (window.VZ_FMT || q.get('fmt')) === 'v';
 const W = +(q.get('w') || (vertical ? 1080 : 1920)), H = +(q.get('h') || (vertical ? 1920 : 1080));
 export const FPS = 30, DUR = 180, FRAMES = DUR * FPS;
 const E = createEngine({ width: W, height: H, fps: FPS });
 document.body.appendChild(E.renderer.domElement);
 const scene = new THREE.Scene(); scene.background = new THREE.Color('#07090d'); scene.fog = new THREE.FogExp2('#0b1222', 0.004);
 scene.environment = makeEnv(E.renderer, 'hangar');
+const VOICE = window.VZ_VOICE || await (await fetch('zvuk/voice/voice.json')).json();
+const drawSubs = makeSubs(VOICE.TEAR, vertical);
 const camera = new THREE.PerspectiveCamera(30, W / H, 0.05, 3000);
 const world = buildWorld(scene);
 world.strip.visible = false; world.sky.visible = false; world.stars.visible = false;
@@ -205,18 +208,31 @@ const W3 = {
       g.fillStyle = '#8a93a3'; g.font = `700 ${22 * S}px Inter, Arial, sans-serif`; g.fillText('BMW M5', bx + bw * 0.27, by + 176 * S); g.fillText('CLS 63', bx + bw * 0.73, by + 176 * S);
       g.textAlign = 'left'; g.globalAlpha = 1;
     }
-    if (world.subs) world.subs(g, t, w, h);
+    drawSubs(g, t, w, h);
   },
 };
 let quality = 8;
 const renderFrame = (n) => drawFrame(E, W3, n, quality);
 const aimCamera = (n) => { const t = n / FPS; W3.update(t); const c = camAt(t); camera.position.set(...c.pos); camera.lookAt(...c.look); camera.fov = c.fov; camera.updateProjectionMatrix(); };
 const range = (name, key, max = 2) => ({ name, type: 'range', min: 0, max, step: 0.05, get: () => settings[key], set: (v) => { settings[key] = v; } });
+function events() {
+  const ev = [[0.3, 'riser', 0.5, 0], [2.3, 'servo', 0.7, -0.3], [7.95, 'boom', 1, 0], [T.bExp, 'riser', 0.8, -0.3], [T.aExp, 'riser', 0.8, 0.3]];
+  for (const [c, st, pan] of [[bmw, T.bExp, -0.3], [amg, T.aExp, 0.3]]) {
+    for (const p of c.parts) if (p.heavy > 0.12) ev.push([st + 9 * (p.exDelay + 0.05), p.heavy > 0.35 ? 'hiss' : 'bolt', 0.4 + p.heavy * 0.5, pan]);
+    ev.push([st + 1.0, 'air_wrench', 0.9, pan], [st + 3.2, 'servo', 0.8, pan], [st + 5.5, 'ratchet', 0.7, pan]);
+  }
+  for (const c of CALL) ev.push([c.a - 0.3, 'whoosh', 0.55, 0], [c.a + 0.1, 'tick', 0.6, 0]);
+  for (const b of BOARDS) ev.push([b.a, 'whoosh', 0.5, 0], [b.a + 0.2, 'tick', 0.7, 0]);
+  ev.push([T.cmp + 2, 'engine_rev', 0.7, -0.4], [T.cmp + 9, 'engine_rev', 0.7, 0.4]);
+  for (const [c, st, pan] of [[bmw, T.back + 2, -0.3], [amg, T.back + 9, 0.3]]) for (const p of c.parts) if (p.heavy > 0.2) ev.push([st + 9 * (1 - p.exDelay / 0.45 * 0.45) * 0.95, 'impact_metal', 0.4 + p.heavy * 0.6, pan]);
+  ev.push([T.back + 18.5, 'light_on', 0.9, 0], [T.fin, 'engine_start', 0.8, -0.3], [T.fin + 1.3, 'engine_start', 0.8, 0.3], [T.fin + 3, 'engine_rev', 0.8, 0], [178.0, 'boom', 0.6, 0]);
+  return ev.sort((a, b) => a[0] - b[0]);
+}
 window.vizaviScene = {
   title: 'Что внутри: BMW M5 и Mercedes CLS 63', fps: FPS, frames: FRAMES, width: W, height: H, saveQuality: 24,
   canvas: E.renderer.domElement, three: THREE, scene, camera, renderFrame, setQuality: (s) => { quality = s; }, aimCamera,
   sceneKnobs: [range('Яркость кадра', 'exposure'), range('Размытие фона', 'blur'), range('Свечение бликов', 'bloom'), range('Виньетка', 'vignette'), range('Зерно', 'grain'), range('Свет гаража', 'lamps'), range('Подписи', 'labels', 1)],
   shots: SCENES.map(([name, a, b]) => ({ name, from: Math.round(a * FPS), to: Math.round(b * FPS) - 1, knobs: [] })),
-  audio: [], E, world: W3, drawFrame: (n, N) => drawFrame(E, W3, n, N), worldRef: world,
+  audio: window.VZ_AUDIO || [], events, E, world: W3, drawFrame: (n, N) => drawFrame(E, W3, n, N), worldRef: world,
 };
 window.sceneReady = true;

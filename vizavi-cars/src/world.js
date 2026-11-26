@@ -32,7 +32,7 @@ function asphaltMaps() {
   // лужи: тёмные гладкие пятна в карте шероховатости
   const rough = canvasTex(1024, 256, (g, w, h) => {
     g.fillStyle = '#b4b4b4'; g.fillRect(0, 0, w, h);
-    for (let i = 0; i < 220; i++) { const gr = g.createRadialGradient(0, 0, 0, 0, 0, 1); gr.addColorStop(0, 'rgba(10,10,10,0.95)'); gr.addColorStop(0.7, 'rgba(10,10,10,0.7)'); gr.addColorStop(1, 'rgba(10,10,10,0)'); g.save(); g.translate(rnd(i + 50) * w, rnd(i + 60) * h); g.scale(6 + rnd(i + 70) * 22, 3 + rnd(i + 80) * 9); g.fillStyle = gr; g.beginPath(); g.arc(0, 0, 1, 0, 7); g.fill(); g.restore(); }
+    for (let i = 0; i < 220; i++) { const gr = g.createRadialGradient(0, 0, 0, 0, 0, 1); gr.addColorStop(0, 'rgba(60,60,60,0.7)'); gr.addColorStop(0.7, 'rgba(70,70,70,0.4)'); gr.addColorStop(1, 'rgba(10,10,10,0)'); g.save(); g.translate(rnd(i + 50) * w, rnd(i + 60) * h); g.scale(6 + rnd(i + 70) * 22, 3 + rnd(i + 80) * 9); g.fillStyle = gr; g.beginPath(); g.arc(0, 0, 1, 0, 7); g.fill(); g.restore(); }
   }, false, [30, 2]);
   return { col, rough };
 }
@@ -100,7 +100,7 @@ export function buildWorld(scene) {
     for (let i = 0; i < 4; i++) { const lamp = new THREE.Mesh(new THREE.PlaneGeometry(0.32, 0.32), new THREE.MeshBasicMaterial({ color: new THREE.Color('#fff1d6').multiplyScalar(8), fog: false, side: THREE.DoubleSide })); lamp.position.set(-0.55 + i * 0.37, 16.2, -side * 0.47); t.add(lamp); }
     const gl = glowSprite('#ffe3b0', 6, 0.5); gl.position.set(0, 16.2, -side * 0.6); t.add(gl);
     S.add(t); t.userData.vz = 'Прожекторная мачта'; W.towers.push({ x, z }); }
-  W.flood = [0, 1, 2].map(() => { const l = new THREE.SpotLight(0xffe7c4, 0, 120, 0.55, 0.7, 1.2); l.castShadow = false; S.add(l, l.target); return l; });
+  W.flood = [0, 1, 2].map(() => { const l = new THREE.SpotLight(0xffe7c4, 0, 120, 0.75, 1.0, 1.2); l.castShadow = false; S.add(l, l.target); return l; });
   const moon = new THREE.DirectionalLight(0x9fb4ff, 0.0); moon.position.set(200, 120, -300); moon.target.position.set(300, 0, 0); S.add(moon, moon.target); W.lights.moon = moon;
   // небо: градиент, звёзды, рассвет через uniform
   const skyMat = new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, fog: false,

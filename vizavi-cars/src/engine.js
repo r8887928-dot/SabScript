@@ -25,7 +25,7 @@ export function createEngine({ width, height, fps = 30 }) {
   const addMat = new THREE.ShaderMaterial({
     uniforms: { tDiffuse: { value: null }, weight: { value: 1 } },
     vertexShader: VERT,
-    fragmentShader: `uniform sampler2D tDiffuse; uniform float weight; varying vec2 vUv; void main(){ gl_FragColor = vec4(texture2D(tDiffuse, vUv).rgb * weight, 1.0); }`,
+    fragmentShader: `uniform sampler2D tDiffuse; uniform float weight; varying vec2 vUv; void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb; if (!(c.r == c.r) || !(c.g == c.g) || !(c.b == c.b) || c.r > 1e4 || c.g > 1e4 || c.b > 1e4) c = vec3(0.0); c = clamp(c, 0.0, 48.0); gl_FragColor = vec4(c * weight, 1.0); }`,
     blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.OneFactor, blendDst: THREE.OneFactor,
     depthTest: false, depthWrite: false,
   });
