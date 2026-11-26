@@ -61,7 +61,7 @@ export function createEngine({ width, height, fps = 30 }) {
         c = toSrgb(c);
         float v = smoothstep(0.85, 0.15, length(d * vec2(res.x/res.y, 1.0) * 0.9)); c *= mix(1.0 - vignette, 1.0, v);
         c += (h(vUv*res + seed) - 0.5) * grain;
-        vec4 ov = texture2D(tOv, vec2(vUv.x, 1.0 - vUv.y));
+        vec4 ov = texture2D(tOv, vUv);
         c = c * (1.0 - ov.a) + ov.rgb;
         c *= 1.0 - fade;
         gl_FragColor = vec4(c, 1.0);

@@ -66,6 +66,60 @@ export function loft(S, o = {}) {
   g.setIndex(idx); g.computeVertexNormals();
   return g;
 }
+
+/** половина сечения (правая сторона) от низа по центру до верха по центру; st = {yb, ys, yt, w, wt, tuck} */
+function halfProfile(st) {
+  const { yb, ys, yt, w, wt, tuck } = st;
+  return [[0, yb], [w * 0.55, yb], [w - tuck, yb + 0.006], [w - tuck * 0.25, yb + 0.05], [w, yb + 0.16 * (ys - yb)], [w, ys - 0.045], [w - 0.008, ys - 0.012], [w - 0.03, ys],
+    [wt + (w - wt) * 0.45, ys + 0.3 * (yt - ys)], [wt, ys + 0.62 * (yt - ys)], [wt * 0.55, yt - 0.006], [0, yt]];
+}
+function resample(pts, n) {
+  const L = [0]; for (let i = 1; i < pts.length; i++) L.push(L[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const out = []; let k = 0;
+  for (let j = 0; j < n; j++) { const d = L[L.length - 1] * j / (n - 1); while (k < L.length - 2 && L[k + 1] < d) k++; const u = (d - L[k]) / Math.max(1e-6, L[k + 1] - L[k]); out.push([pts[k][0] + (pts[k + 1][0] - pts[k][0]) * u, pts[k][1] + (pts[k + 1][1] - pts[k][1]) * u]); }
+  return out;
+}
+/** кузов по профильным сечениям: плоские бока, грань плеча, поджатый низ; arches — вырезы арок с нишей */
+export function loftP(S, o = {}) {
+  const x0 = o.x0 ?? S[0].x, x1 = o.x1 ?? S[S.length - 1].x, steps = o.steps ?? 60, half = o.half ?? 26, u0 = o.u0 ?? 0, u1 = o.u1 ?? 1;
+  const closed = u0 === 0 && u1 === 1, inset = o.inset ?? 0;
+  const pos = [], col = [], uv = [], idx = [];
+  const keys = ['yb', 'ys', 'yt', 'w', 'wt', 'tuck'];
+  let M = 0;
+  for (let i = 0; i <= steps; i++) {
+    const x = lerp(x0, x1, i / steps);
+    const st = {}; for (const k of keys) st[k] = sample(S, k, x);
+    st.w += inset; st.wt += inset; st.yt += inset; st.yb -= inset;
+    const h = resample(halfProfile(st), half);
+    const ring = [];
+    for (let j = 0; j < half; j++) ring.push([h[j][0], h[j][1]]);
+    for (let j = half - 2; j >= 1; j--) ring.push([-h[j][0], h[j][1]]);
+    const R = ring.length; let J0 = Math.round(u0 * R), J1 = closed ? R : Math.round(u1 * R) + 1;
+    M = J1 - J0;
+    for (let jj = J0; jj < J1; jj++) {
+      const [z, y] = ring[((jj % R) + R) % R]; let zz = z, c = 1;
+      for (const a of o.arches || []) {
+        const d = Math.hypot(x - a.x, y - a.y);
+        if (d < a.r && Math.abs(z) > a.zmin) { const e = Math.min(1, (a.r - d) / 0.025); zz = Math.sign(z) * lerp(Math.abs(z), a.inner, e); c = lerp(1, 0.06, e); }
+      }
+      pos.push(x, y, zz); col.push(c, c, c); uv.push((jj - J0) / M, i / steps);
+    }
+  }
+  for (let i = 0; i < steps; i++) for (let j = 0; j < (closed ? M : M - 1); j++) {
+    const a = i * M + j, b = (i + 1) * M + j, c = i * M + ((j + 1) % M), d = (i + 1) * M + ((j + 1) % M);
+    idx.push(a, c, b, c, d, b);
+  }
+  if (closed && o.cap !== false) for (const [ii, flip] of [[0, false], [steps, true]].filter(([ii]) => (ii === 0 ? o.cap0 !== false : o.cap1 !== false))) {
+    const base = pos.length / 3; let cy = 0, cx = pos[ii * M * 3];
+    for (let j = 0; j < M; j++) cy += pos[(ii * M + j) * 3 + 1]; cy /= M;
+    pos.push(cx, cy, 0); col.push(1, 1, 1); uv.push(0.5, 0.5);
+    for (let j = 0; j < M; j++) { const a = ii * M + j, b = ii * M + ((j + 1) % M); if (flip) idx.push(base, a, b); else idx.push(base, b, a); }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx); g.computeVertexNormals(); return g;
+}
+
 /** половина ширины корпуса на высоте y (для арок) */
 export function halfWidthAt(S, x, y) {
   const yb = sample(S, 'yb', x), yt = sample(S, 'yt', x), w = sample(S, 'w', x), n = Math.max(2, sample(S, 'n', x));
@@ -94,10 +148,45 @@ function texWeave() {
   }
   weaveTex = new THREE.CanvasTexture(c); weaveTex.wrapS = weaveTex.wrapT = THREE.RepeatWrapping; weaveTex.repeat.set(10, 10); weaveTex.colorSpace = THREE.SRGBColorSpace; weaveTex.anisotropy = 4; return weaveTex;
 }
-export const paint = (color, o = {}) => new THREE.MeshPhysicalMaterial({ color, metalness: o.metal ?? 1, roughness: o.r ?? 0.3, clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: o.env ?? 1.0, ...(o.extra || {}) });
+let camoTex = null, meshTex = null;
+function texCamo() {
+  if (camoTex) return camoTex;
+  const N = 1024, c = document.createElement('canvas'); c.width = c.height = N; const g = c.getContext('2d');
+  g.fillStyle = '#ecebe7'; g.fillRect(0, 0, N, N); g.strokeStyle = '#0b0b0c'; g.lineCap = 'round';
+  let seed = 3; const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let k = 0; k < 420; k++) {
+    const x = r() * N, y = r() * N, R = 14 + r() * 60, turns = 2 + r() * 3, dir = r() < 0.5 ? -1 : 1, lw = 3 + r() * 6;
+    g.lineWidth = lw; g.beginPath();
+    for (let a = 0; a < turns * Math.PI * 2; a += 0.12) { const rr = R * a / (turns * Math.PI * 2); const px = x + Math.cos(a * dir) * rr, py = y + Math.sin(a * dir) * rr; if (a === 0) g.moveTo(px, py); else g.lineTo(px, py); }
+    g.stroke();
+    for (const [ox, oy] of [[-N, 0], [N, 0], [0, -N], [0, N]]) if (x + ox > -R && x + ox < N + R && y + oy > -R && y + oy < N + R) { g.save(); g.translate(ox, oy); g.beginPath(); for (let a = 0; a < turns * Math.PI * 2; a += 0.12) { const rr = R * a / (turns * Math.PI * 2); const px = x + Math.cos(a * dir) * rr, py = y + Math.sin(a * dir) * rr; if (a === 0) g.moveTo(px, py); else g.lineTo(px, py); } g.stroke(); g.restore(); }
+  }
+  for (let k = 0; k < 90; k++) { g.fillStyle = '#0b0b0c'; g.beginPath(); g.ellipse(r() * N, r() * N, 4 + r() * 16, 3 + r() * 9, r() * 3, 0, 7); g.fill(); }
+  camoTex = new THREE.CanvasTexture(c); camoTex.wrapS = camoTex.wrapT = THREE.RepeatWrapping; camoTex.colorSpace = THREE.SRGBColorSpace; camoTex.anisotropy = 4; return camoTex;
+}
+function texMesh() {
+  if (meshTex) return meshTex;
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); g.fillStyle = '#050506'; g.fillRect(0, 0, 128, 128);
+  g.strokeStyle = '#2b2c30'; g.lineWidth = 3; for (let i = -128; i < 256; i += 12) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i + 128, 128); g.stroke(); g.beginPath(); g.moveTo(i + 128, 0); g.lineTo(i, 128); g.stroke(); }
+  meshTex = new THREE.CanvasTexture(c); meshTex.wrapS = meshTex.wrapT = THREE.RepeatWrapping; meshTex.repeat.set(1, 1); meshTex.colorSpace = THREE.SRGBColorSpace; return meshTex;
+}
+/** камуфляжная плёнка: трипланарная проекция в координатах машины */
+let camoMat = null;
+export function camoPaint() {
+  if (camoMat) return camoMat;
+  const m = new THREE.MeshPhysicalMaterial({ color: 0xffffff, metalness: 0, roughness: 0.42, clearcoat: 0.55, clearcoatRoughness: 0.18, envMapIntensity: 1.0, vertexColors: true });
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.tCamo = { value: texCamo() }; sh.uniforms.camoScale = { value: 0.75 };
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vObjPos; varying vec3 vObjN;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvObjPos = position; vObjN = normal;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D tCamo; uniform float camoScale; varying vec3 vObjPos; varying vec3 vObjN;')
+      .replace('#include <map_fragment>', '#include <map_fragment>\n{ vec3 bw = pow(abs(normalize(vObjN)), vec3(4.0)); bw /= (bw.x + bw.y + bw.z + 1e-4);\n vec3 cx = texture2D(tCamo, vObjPos.zy * camoScale).rgb, cy = texture2D(tCamo, vObjPos.xz * camoScale).rgb, cz = texture2D(tCamo, vObjPos.xy * camoScale).rgb;\n diffuseColor.rgb *= cx * bw.x + cy * bw.y + cz * bw.z; }');
+  };
+  m.userData.vzCamo = true; camoMat = m; return m;
+}
+export const paint = (color, o = {}) => new THREE.MeshPhysicalMaterial({ color, vertexColors: o.vc ?? false, metalness: o.metal ?? 1, roughness: o.r ?? 0.3, clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: o.env ?? 1.0, ...(o.extra || {}) });
 const glass = () => new THREE.MeshPhysicalMaterial({ color: 0x060a10, metalness: 0, roughness: 0.04, transparent: true, opacity: 0.72, clearcoat: 1, clearcoatRoughness: 0.02, envMapIntensity: 1.4 });
 const rubber = () => new THREE.MeshStandardMaterial({ color: 0x0c0c0d, metalness: 0, roughness: 0.92, roughnessMap: texNoise() });
-const carbon = () => new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: texWeave(), metalness: 0, roughness: 0.38, clearcoat: 0.8, clearcoatRoughness: 0.12 });
+const carbon = () => new THREE.MeshPhysicalMaterial({ color: 0x8a8a8a, map: texWeave(), metalness: 0, roughness: 0.38, clearcoat: 0.8, clearcoatRoughness: 0.12 });
 const steel = (c = 0x9a9ea5, r = 0.35) => new THREE.MeshStandardMaterial({ color: c, metalness: 1, roughness: r });
 const black = (r = 0.6) => new THREE.MeshStandardMaterial({ color: 0x08080a, metalness: 0, roughness: r });
 const emis = (c, i = 3) => new THREE.MeshStandardMaterial({ color: 0x000000, emissive: new THREE.Color(c), emissiveIntensity: i, roughness: 0.4 });
@@ -153,8 +242,8 @@ function makeWheel(R, W, o) {
  * Все детали лежат в body (подрессоренная часть); колёса — в root, но под кузовом.
  */
 export function buildCar(kind) {
-  const xm = kind === 'xm';
-  const root = new THREE.Group(); root.userData.vz = xm ? 'BMW XM Label' : 'Mercedes-AMG ONE';
+  const xm = kind === 'bmw' || kind === 'xm'; // BMW M6 GT3
+  const root = new THREE.Group(); root.userData.vz = xm ? 'BMW M6 GT3' : 'Mercedes-AMG ONE';
   const body = new THREE.Group(); root.add(body);
   const parts = []; // {obj, delay, dur, from:[x,y,z], rot:[x,y,z], heavy, name}
   const add = (mesh, name, o = {}) => {
@@ -164,58 +253,62 @@ export function buildCar(kind) {
   };
 
   const S = xm ? [
-    { x: -2.555, yb: 0.45, yt: 1.24, w: 0.80, n: 3, hump: 0.0 }, { x: -2.50, yb: 0.36, yt: 1.38, w: 0.93, n: 3.4, hump: 0.0 }, { x: -2.30, yb: 0.32, yt: 1.44, w: 0.98, n: 3.8, hump: 0.0 },
-    { x: -1.60, yb: 0.30, yt: 1.40, w: 1.0, n: 4, hump: 0.0 }, { x: -0.60, yb: 0.30, yt: 1.36, w: 1.0, n: 4, hump: 0.0 }, { x: 0.40, yb: 0.30, yt: 1.30, w: 1.0, n: 4, hump: 0.0 },
-    { x: 1.00, yb: 0.30, yt: 1.27, w: 1.0, n: 3.8, hump: 0.0 }, { x: 1.80, yb: 0.30, yt: 1.19, w: 1.0, n: 3.8, hump: 0.0 }, { x: 2.30, yb: 0.31, yt: 1.13, w: 0.98, n: 3.8, hump: 0.0 },
-    { x: 2.50, yb: 0.33, yt: 1.09, w: 0.92, n: 3.6, hump: 0.0 }, { x: 2.555, yb: 0.36, yt: 1.03, w: 0.84, n: 3.4, hump: 0.0 },
+    { x: -2.472, yb: 0.30, ys: 0.62, yt: 0.80, w: 0.80, wt: 0.62, tuck: 0.10 }, { x: -2.40, yb: 0.22, ys: 0.70, yt: 0.90, w: 0.92, wt: 0.75, tuck: 0.08 },
+    { x: -2.15, yb: 0.14, ys: 0.76, yt: 0.96, w: 1.0, wt: 0.84, tuck: 0.06 }, { x: -1.45, yb: 0.12, ys: 0.78, yt: 0.97, w: 1.023, wt: 0.86, tuck: 0.05 },
+    { x: -0.70, yb: 0.12, ys: 0.74, yt: 0.92, w: 0.94, wt: 0.83, tuck: 0.05 }, { x: 0.20, yb: 0.12, ys: 0.72, yt: 0.88, w: 0.94, wt: 0.83, tuck: 0.05 },
+    { x: 0.90, yb: 0.12, ys: 0.70, yt: 0.86, w: 0.97, wt: 0.85, tuck: 0.05 }, { x: 1.45, yb: 0.12, ys: 0.68, yt: 0.82, w: 1.023, wt: 0.88, tuck: 0.05 },
+    { x: 2.00, yb: 0.12, ys: 0.62, yt: 0.74, w: 0.99, wt: 0.82, tuck: 0.05 }, { x: 2.35, yb: 0.13, ys: 0.52, yt: 0.66, w: 0.92, wt: 0.72, tuck: 0.06 },
+    { x: 2.472, yb: 0.17, ys: 0.44, yt: 0.58, w: 0.82, wt: 0.55, tuck: 0.08 },
   ] : [
-    { x: -2.378, yb: 0.25, yt: 0.78, w: 0.50, n: 3, hump: 0.0 }, { x: -2.30, yb: 0.18, yt: 0.92, w: 0.70, n: 3, hump: 0.04 }, { x: -2.00, yb: 0.14, yt: 1.04, w: 0.90, n: 3.4, hump: 0.12 },
-    { x: -1.50, yb: 0.12, yt: 1.05, w: 0.99, n: 3.8, hump: 0.14 }, { x: -0.90, yb: 0.11, yt: 0.98, w: 1.0, n: 3.8, hump: 0.1 }, { x: -0.20, yb: 0.11, yt: 0.90, w: 1.0, n: 3.8, hump: 0.02 },
-    { x: 0.50, yb: 0.10, yt: 0.84, w: 1.0, n: 3.8, hump: 0.03 }, { x: 1.00, yb: 0.10, yt: 0.80, w: 1.0, n: 3.6, hump: 0.1 }, { x: 1.50, yb: 0.09, yt: 0.70, w: 0.99, n: 3.4, hump: 0.12 },
-    { x: 2.00, yb: 0.09, yt: 0.55, w: 0.93, n: 3.2, hump: 0.09 }, { x: 2.30, yb: 0.10, yt: 0.42, w: 0.80, n: 3, hump: 0.04 }, { x: 2.378, yb: 0.12, yt: 0.30, w: 0.55, n: 3, hump: 0.0 },
+    { x: -2.378, yb: 0.25, ys: 0.66, yt: 0.70, w: 0.52, wt: 0.40, tuck: 0.05 }, { x: -2.30, yb: 0.18, ys: 0.80, yt: 0.84, w: 0.74, wt: 0.56, tuck: 0.05 },
+    { x: -2.00, yb: 0.14, ys: 0.95, yt: 0.96, w: 0.93, wt: 0.74, tuck: 0.05 }, { x: -1.36, yb: 0.12, ys: 1.0, yt: 0.98, w: 1.005, wt: 0.82, tuck: 0.05 },
+    { x: -0.70, yb: 0.11, ys: 0.80, yt: 0.90, w: 0.93, wt: 0.72, tuck: 0.05 }, { x: -0.10, yb: 0.11, ys: 0.72, yt: 0.84, w: 0.91, wt: 0.72, tuck: 0.05 },
+    { x: 0.60, yb: 0.10, ys: 0.78, yt: 0.74, w: 0.94, wt: 0.78, tuck: 0.05 }, { x: 1.36, yb: 0.10, ys: 0.80, yt: 0.68, w: 1.005, wt: 0.86, tuck: 0.05 },
+    { x: 1.90, yb: 0.09, ys: 0.62, yt: 0.52, w: 0.96, wt: 0.78, tuck: 0.05 }, { x: 2.25, yb: 0.10, ys: 0.46, yt: 0.40, w: 0.82, wt: 0.62, tuck: 0.05 },
+    { x: 2.378, yb: 0.12, ys: 0.32, yt: 0.30, w: 0.58, wt: 0.45, tuck: 0.05 },
   ];
   const C = xm ? [
-    { x: -2.50, yb: 1.42, yt: 1.50, w: 0.80, n: 3 }, { x: -2.40, yb: 1.42, yt: 1.60, w: 0.88, n: 3 }, { x: -2.10, yb: 1.40, yt: 1.65, w: 0.92, n: 3.2 },
-    { x: -1.60, yb: 1.38, yt: 1.72, w: 0.93, n: 3.6 }, { x: -0.50, yb: 1.34, yt: 1.755, w: 0.92, n: 3.6 }, { x: 0.10, yb: 1.32, yt: 1.72, w: 0.90, n: 3.4 },
-    { x: 0.60, yb: 1.30, yt: 1.55, w: 0.88, n: 3.2 }, { x: 1.00, yb: 1.28, yt: 1.32, w: 0.86, n: 3 },
+    { x: -1.80, yb: 0.94, yt: 0.99, w: 0.62, n: 3 }, { x: -1.40, yb: 0.93, yt: 1.10, w: 0.70, n: 3 }, { x: -0.80, yb: 0.92, yt: 1.22, w: 0.74, n: 3.2 },
+    { x: -0.20, yb: 0.90, yt: 1.24, w: 0.76, n: 3.4 }, { x: 0.30, yb: 0.89, yt: 1.19, w: 0.78, n: 3.4 }, { x: 0.70, yb: 0.88, yt: 1.04, w: 0.82, n: 3.2 },
+    { x: 1.00, yb: 0.86, yt: 0.90, w: 0.84, n: 3 },
   ] : [
     { x: -1.55, yb: 0.98, yt: 1.02, w: 0.30, n: 3 }, { x: -1.10, yb: 0.96, yt: 1.14, w: 0.55, n: 3 }, { x: -0.55, yb: 0.92, yt: 1.235, w: 0.68, n: 3.2 },
     { x: 0.00, yb: 0.88, yt: 1.261, w: 0.72, n: 3.4 }, { x: 0.50, yb: 0.84, yt: 1.20, w: 0.76, n: 3.4 }, { x: 0.95, yb: 0.81, yt: 1.02, w: 0.84, n: 3.2 },
     { x: 1.30, yb: 0.78, yt: 0.86, w: 0.90, n: 3 },
   ];
-  const wb = xm ? 1.5525 : 1.365, R = xm ? 0.395 : 0.345, RR = xm ? 0.395 : 0.355;
-  const paintMat = xm ? paint(0x0a0a0d, { metal: 0, r: 0.32, env: 1.25 }) : paint(0xc3c8cf, { metal: 1, r: 0.28, env: 1.1 });
-  const accent = xm ? new THREE.Color('#e11b22') : new THREE.Color('#19d2e8');
+  const wb = xm ? 1.4505 : 1.365, R = xm ? 0.34 : 0.345, RR = xm ? 0.345 : 0.355;
+  const paintMat = xm ? camoPaint() : paint(0xc3c8cf, { metal: 1, r: 0.28, env: 1.1, vc: true });
+  const accent = xm ? new THREE.Color('#2a7bff') : new THREE.Color('#19d2e8');
   const trim = xm ? black(0.45) : carbon();
 
   // ---- кузов по частям: щель между панелями 8 мм
-  const g = 0.004;
-  const cut = xm ? [-2.555, -1.95, -0.2, 0.9, 1.75, 2.555] : [-2.378, -1.7, -0.2, 0.55, 1.5, 2.378];
-  const names = xm ? ['задний бампер', 'задняя часть', 'корпус', 'капот', 'передний бампер'] : ['хвост', 'задние крылья', 'корпус', 'капот', 'нос'];
+  const g = 0.0015;
+  const cut = xm ? [-2.472, -1.8, -0.2, 0.75, 1.75, 2.472] : [-2.378, -1.7, -0.2, 0.55, 1.5, 2.378];
+  const names = xm ? ['задний бампер', 'задние крылья', 'корпус', 'капот', 'передний бампер'] : ['хвост', 'задние крылья', 'корпус', 'капот', 'нос'];
   const fromV = [[-10, 3, 0], [-9, 5, 1], [0, 7, 0], [9, 4, -1], [10, 3, 0]];
   const hv = [0.4, 0.5, 1.0, 0.6, 0.45];
+  const arches = [[wb, R], [-wb, RR]].map(([ax, r]) => ({ x: ax, y: r, r: r + 0.06, zmin: 0.55, inner: 0.5 }));
   for (let i = 0; i < 5; i++) {
-    const m = new THREE.Mesh(loft(S, { x0: cut[i] + (i ? g : 0), x1: cut[i + 1] - (i < 4 ? g : 0), steps: 22, M: 44 }), i === 4 && !xm ? carbon() : paintMat);
+    const m = new THREE.Mesh(loftP(S, { x0: cut[i] + (i ? g : 0), x1: cut[i + 1] - (i < 4 ? g : 0), steps: Math.ceil((cut[i + 1] - cut[i]) / 0.025), half: 34, arches, cap0: i === 0, cap1: i === 4 }), paintMat); m.material.side = THREE.DoubleSide;
     add(m, names[i], { delay: [1.9, 1.5, 0.6, 3.5, 3.1][i], dur: 1.1, from: fromV[i], heavy: hv[i], vzPart: 'кузов' });
   }
   // нижняя панель (днище/сплиттер/диффузор)
-  const under = new THREE.Mesh(loft(S, { inset: 0.0, yoff: -0.04, wmul: 0.97, steps: 30, M: 24, a0: Math.PI + 0.35, a1: Math.PI * 2 - 0.35 }), black(0.7));
-  under.material.side = THREE.DoubleSide;
+  const under = new THREE.Mesh(new RoundedBoxGeometry(cut[5] - cut[0] - 0.3, 0.05, 1.7, 2, 0.02), black(0.7)); under.position.set((cut[5] + cut[0]) / 2, (xm ? 0.12 : 0.1) + 0.02, 0);
   add(under, 'днище', { delay: 0.0, dur: 0.7, from: [0, -4, 0], heavy: 0.2, vzPart: 'днище' });
   // сплиттер и диффузор
   const front = S[S.length - 1].x, rear = S[0].x;
-  const split = new THREE.Mesh(new RoundedBoxGeometry(xm ? 0.16 : 0.34, 0.022, xm ? 1.5 : 1.7, 2, 0.008), xm ? black(0.5) : carbon()); split.position.set(front - (xm ? 0.12 : 0.24), xm ? 0.35 : 0.085, 0);
+  const split = new THREE.Mesh(new RoundedBoxGeometry(xm ? 0.3 : 0.3, 0.022, xm ? 1.85 : 1.45, 2, 0.008), carbon()); split.position.set(front - (xm ? 0.2 : 0.3), xm ? 0.12 : 0.085, 0);
   add(split, 'сплиттер', { delay: 4.0, dur: 0.6, from: [4, 0, 0], heavy: 0.1 });
-  const diff = new THREE.Mesh(new RoundedBoxGeometry(0.7, 0.05, xm ? 1.5 : 1.7, 2, 0.01), xm ? black(0.5) : carbon()); diff.position.set(rear + 0.25, xm ? 0.34 : 0.17, 0); diff.rotation.z = -0.12;
+  const diff = new THREE.Mesh(new RoundedBoxGeometry(0.7, 0.05, xm ? 1.6 : 1.7, 2, 0.01), carbon()); diff.position.set(rear + 0.25, xm ? 0.2 : 0.17, 0); diff.rotation.z = -0.12;
   add(diff, 'диффузор', { delay: 2.4, dur: 0.6, from: [-4, 0, 0], heavy: 0.1 });
   if (!xm) for (let i = 0; i < 7; i++) { const f = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.12, 0.012), carbon()); f.position.set(rear + 0.28, 0.24, -0.62 + i * 0.205); diff.userData.f = 1; add(f, 'ребро диффузора', { delay: 2.5 + i * 0.03, dur: 0.4, from: [0, 2, 0], heavy: 0.05 }); }
 
   // ---- кабина: стекла, крыша, стойки
   const cab = new THREE.Mesh(loft(C, { steps: 30, M: 40 }), glass()); cab.renderOrder = 2;
   add(cab, 'стёкла', { delay: 4.8, dur: 0.9, from: [0, 7, 0], heavy: 0.3, vzPart: 'стёкла' });
-  const roofX0 = xm ? -2.3 : -0.95, roofX1 = xm ? 0.1 : 0.35;
+  const roofX0 = xm ? -1.3 : -0.95, roofX1 = xm ? 0.35 : 0.35;
   const roofS = C.map((c) => ({ ...c, yb: c.yt - 0.055, yt: c.yt + 0.006, w: c.w - 0.075 }));
-  const roof = new THREE.Mesh(loft(roofS, { x0: roofX0, x1: roofX1, steps: 22, M: 32, a0: 0.15, a1: Math.PI - 0.15 }), xm ? paintMat : carbon());
+  const roof = new THREE.Mesh(loft(roofS, { x0: roofX0, x1: roofX1, steps: 22, M: 32, a0: 0.15, a1: Math.PI - 0.15 }), xm ? paint(0x0b0b0d, { metal: 0, r: 0.3 }) : carbon());
   roof.material = roof.material.clone(); roof.material.side = THREE.DoubleSide;
   add(roof, 'крыша', { delay: 4.4, dur: 0.9, from: [0, 8, 0], heavy: 0.4, vzPart: 'крыша' });
   // стойки A, B, C (тонкие, цвет кузова)
@@ -226,65 +319,68 @@ export function buildCar(kind) {
     add(m, name, { delay: d, dur: 0.5, from: [0, 3, z * 4], heavy: 0.1, vzPart: 'стойки' });
   };
   for (const z of [-1, 1]) {
-    if (xm) { pill(1.0, 1.31, 0.12, 1.705, 0.045, z * 0.885, 'стойка A', 5.2); pill(-0.58, 1.34, -0.58, 1.75, 0.05, z * 0.93, 'стойка B', 5.3); pill(-2.5, 1.45, -2.1, 1.72, 0.05, z * 0.85, 'стойка C', 5.3); }
   }
   // линия окна по бокам: тонкая хромированная окантовка у XM, чёрная у AMG
   // ---- двери: накладные панели на корпусе (3 мм над поверхностью)
   const doorSlice = (x0, x1, nm, dly, zs) => {
-    const m = new THREE.Mesh(loft(S, { x0, x1, steps: 14, M: 16, a0: zs > 0 ? -0.5 : Math.PI - 0.5, a1: zs > 0 ? 0.5 : Math.PI + 0.5, closed: false, inset: -0.004 }), paintMat);
+    const m = new THREE.Mesh(loftP(S, { x0, x1, steps: 24, half: 34, u0: zs > 0 ? 0.07 : 0.69, u1: zs > 0 ? 0.31 : 0.93, inset: 0.003 }), paintMat);
     add(m, nm, { delay: dly, dur: 0.7, from: [0, 1.2, zs * 5], heavy: 0.3, vzPart: 'двери' });
   };
-  const dxs = xm ? [[-1.35, -0.35], [-0.31, 0.78]] : [[-0.55, 0.2], [0.24, 0.9]];
-  for (const zs of [1, -1]) for (const [a, b] of dxs) doorSlice(a, b, 'дверь', 4.0 + (zs > 0 ? 0 : 0.18) + (a > -0.5 ? 0.1 : 0), zs);
+  // двери: швы-линии вместо накладных панелей
+  const seamMat = black(0.6);
+  for (const zs of [1, -1]) for (const xs of (xm ? [-0.78, 0.74] : [-0.62, 0.86])) {
+    const yb0 = sample(S, 'yb', xs) + 0.08, ys0 = sample(S, 'ys', xs) - 0.03, wz = sample(S, 'w', xs) + 0.002;
+    const seam = new THREE.Mesh(new THREE.BoxGeometry(0.006, ys0 - yb0, 0.004), seamMat); seam.position.set(xs, (yb0 + ys0) / 2, zs * wz);
+    add(seam, 'шов двери', { delay: 4.2, dur: 0.3, from: [0, 0, zs * 2], heavy: 0, vzPart: 'двери' });
+  }
 
   // ---- решётка, фары, огни
   if (xm) {
-    // огромная вертикальная решётка с контуром, ламели отдельно
-    const sh = new THREE.Shape(); const gw = 0.42, gh = 0.40, ch = 0.12;
-    sh.moveTo(-gw + ch, -gh); sh.lineTo(gw - ch, -gh); sh.lineTo(gw, -gh + ch); sh.lineTo(gw, gh - ch); sh.lineTo(gw - ch, gh); sh.lineTo(-gw + ch, gh); sh.lineTo(-gw, gh - ch); sh.lineTo(-gw, -gh + ch); sh.closePath();
-    const hole = new THREE.Path(); const iw = gw - 0.045, ih = gh - 0.045, ic = ch - 0.02;
-    hole.moveTo(-iw + ic, -ih); hole.lineTo(iw - ic, -ih); hole.lineTo(iw, -ih + ic); hole.lineTo(iw, ih - ic); hole.lineTo(iw - ic, ih); hole.lineTo(-iw + ic, ih); hole.lineTo(-iw, ih - ic); hole.lineTo(-iw, -ih + ic); hole.closePath(); sh.holes.push(hole);
-    const frameGeo = new THREE.ExtrudeGeometry(sh, { depth: 0.06, bevelEnabled: true, bevelSize: 0.01, bevelThickness: 0.01, bevelSegments: 3 });
-    const frame = new THREE.Mesh(frameGeo, steel(0x16161a, 0.25)); frame.rotation.y = Math.PI / 2; frame.position.set(front - 0.07, 0.68, 0);
-    add(frame, 'рамка решётки', { delay: 5.9, dur: 0.6, from: [3, 0, 0], heavy: 0.1, vzPart: 'решётка' });
-    // светящийся контур (Iconic Glow): красная лента внутри рамки
-    const glow = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.012, bevelEnabled: false }), emis('#ff2a2a', 0));
-    glow.rotation.y = Math.PI / 2; glow.position.set(front - 0.008, 0.68, 0); glow.scale.set(1.0, 1.0, 1.0);
-    add(glow, 'контур решётки', { delay: 6.0, dur: 0.4, from: [0, 0, 0], heavy: 0, vzPart: 'решётка' }); body.userData.glowMat = glow.material;
-    const nsl = 13;
-    for (let i = 0; i < nsl; i++) { // вертикальные ламели
-      const t = i / (nsl - 1) * 2 - 1; const sl = new THREE.Mesh(new RoundedBoxGeometry(0.03, 0.74, 0.02, 2, 0.006), black(0.3));
-      sl.position.set(front - 0.04, 0.68, t * (iw - 0.02)); add(sl, 'ламель решётки', { delay: 6.0 + i * 0.02, dur: 0.35, from: [2, 0, 0], heavy: 0.02, vzPart: 'решётка' });
-    }
-    // расщеплённые фары
+    // BMW M6 GT3: две «ноздри», хищные фары с кольцами, огромный нижний воздухозаборник с сеткой, крыло на стойках
+    const meshMat = new THREE.MeshStandardMaterial({ color: 0xffffff, map: texMesh(), roughness: 0.6, metalness: 0.0, transparent: false });
     for (const z of [-1, 1]) {
-      const drl = new THREE.Mesh(new RoundedBoxGeometry(0.1, 0.028, 0.5, 3, 0.01), emis('#ffffff', 0)); drl.position.set(front - 0.2, 0.98, z * 0.64); drl.rotation.y = z * -0.25; drl.rotation.z = -0.1;
-      add(drl, 'ходовой огонь', { delay: 6.4, dur: 0.4, from: [2, 0, 0], heavy: 0, vzPart: 'фары' }); (body.userData.drl ||= []).push(drl.material);
-      const low = new THREE.Mesh(new RoundedBoxGeometry(0.12, 0.09, 0.42, 3, 0.02), black(0.1)); low.position.set(front - 0.18, 0.84, z * 0.7); low.rotation.y = z * -0.28;
-      add(low, 'блок фар', { delay: 6.3, dur: 0.4, from: [2, 0, 0], heavy: 0.02, vzPart: 'фары' });
-      const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.02, 20), emis('#e8f2ff', 0)); lens.rotation.z = Math.PI / 2; lens.position.set(front - 0.1, 0.84, z * 0.64); lens.rotation.y = z * -0.28;
-      add(lens, 'линза фары', { delay: 6.5, dur: 0.3, from: [1, 0, 0], heavy: 0, vzPart: 'фары' }); (body.userData.lens ||= []).push(lens.material);
-      // L-образные задние огни
-      const tl = new THREE.Mesh(new RoundedBoxGeometry(0.05, 0.05, 0.55, 2, 0.01), emis('#ff1010', 0)); tl.position.set(rear + 0.05, 1.28, z * 0.68);
+      // ноздря: скруглённая рамка + вертикальные ламели
+      const fr = new THREE.Mesh(new RoundedBoxGeometry(0.07, 0.24, 0.4, 4, 0.06), steel(0x2a2b30, 0.18)); fr.position.set(2.43, 0.52, z * 0.235); fr.rotation.z = -0.5;
+      add(fr, 'ноздря решётки', { delay: 5.9, dur: 0.6, from: [3, 0, 0], heavy: 0.05, vzPart: 'решётка' });
+      for (let i = 0; i < 8; i++) { const sl = new THREE.Mesh(new RoundedBoxGeometry(0.03, 0.2, 0.018, 2, 0.005), black(0.2)); sl.position.set(2.465, 0.52, z * (0.08 + i * 0.044)); sl.rotation.z = -0.5; add(sl, 'ламель', { delay: 6.0 + i * 0.02, dur: 0.35, from: [2, 0, 0], heavy: 0, vzPart: 'решётка' }); }
+      // фара: тёмный корпус-клин + два кольца-«глаза» + светодиодная бровь
+      const hb = new THREE.Mesh(new RoundedBoxGeometry(0.4, 0.1, 0.36, 3, 0.03), new THREE.MeshPhysicalMaterial({ color: 0x0a0c10, roughness: 0.05, clearcoat: 1 })); hb.position.set(2.18, 0.6, z * 0.62); hb.rotation.y = z * -0.42; hb.rotation.z = -0.34;
+      add(hb, 'корпус фары', { delay: 6.2, dur: 0.4, from: [2, 0, 0], heavy: 0.02, vzPart: 'фары' });
+      for (const k of [0, 1]) { const ring = new THREE.Mesh(new THREE.TorusGeometry(0.048, 0.008, 8, 32), emis('#dfeaff', 0)); ring.rotation.y = Math.PI / 2 + z * -0.42; ring.position.set(2.31 - k * 0.07, 0.635, z * (0.56 + k * 0.13));
+        add(ring, 'кольцо фары', { delay: 6.4, dur: 0.3, from: [1, 0, 0], heavy: 0, vzPart: 'фары' }); (body.userData.lens ||= []).push(ring.material); }
+      const brow = new THREE.Mesh(new RoundedBoxGeometry(0.03, 0.01, 0.26, 2, 0.004), emis('#ffffff', 0)); brow.position.set(2.27, 0.668, z * 0.63); brow.rotation.y = z * -0.42; brow.rotation.z = -0.34;
+      add(brow, 'светодиодная бровь', { delay: 6.5, dur: 0.3, from: [1, 0, 0], heavy: 0, vzPart: 'фары' }); (body.userData.drl ||= []).push(brow.material);
+      // боковые воздухозаборники бампера
+      const si = new THREE.Mesh(new RoundedBoxGeometry(0.05, 0.16, 0.24, 2, 0.02), meshMat); si.position.set(2.42, 0.3, z * 0.76); si.rotation.y = z * -0.35;
+      add(si, 'боковая сетка', { delay: 6.0, dur: 0.4, from: [2, 0, 0], heavy: 0, vzPart: 'воздухозаборник' });
+      // жабры за передним колесом
+      for (let i = 0; i < 3; i++) { const g1 = new THREE.Mesh(new RoundedBoxGeometry(0.22, 0.025, 0.02, 2, 0.008), black(0.4)); g1.position.set(0.86 - i * 0.03, 0.52 + i * 0.06, z * 1.0); g1.rotation.z = 0.5;
+        add(g1, 'жабры', { delay: 5.6, dur: 0.4, from: [0, 0, z * 2], heavy: 0, vzPart: 'жабры' }); }
+      // зеркала на стойке, задние огни-«L», выхлоп сбоку под порогом
+      const mir = new THREE.Mesh(new RoundedBoxGeometry(0.16, 0.09, 0.2, 3, 0.03), camoPaint()); mir.position.set(0.68, 0.98, z * 0.98); add(mir, 'зеркало', { delay: 5.6, dur: 0.4, from: [0, 1, z * 2], heavy: 0.05, vzPart: 'зеркала' });
+      const tl = new THREE.Mesh(new RoundedBoxGeometry(0.05, 0.06, 0.42, 2, 0.015), emis('#ff1010', 0)); tl.position.set(-2.4, 0.82, z * 0.62); tl.rotation.y = z * 0.4;
       add(tl, 'задний огонь', { delay: 3.3, dur: 0.4, from: [-2, 0, 0], heavy: 0, vzPart: 'задние огни' }); (body.userData.tail ||= []).push(tl.material);
-      const tv = new THREE.Mesh(new RoundedBoxGeometry(0.05, 0.4, 0.05, 2, 0.01), emis('#ff1010', 0)); tv.position.set(rear + 0.05, 1.05, z * 0.93);
-      add(tv, 'задний огонь', { delay: 3.35, dur: 0.4, from: [-2, 0, 0], heavy: 0, vzPart: 'задние огни' }); body.userData.tail.push(tv.material);
-      // выхлопные трубы (шестигранные, по две с края)
-      for (const dz of [0, 1]) {
-        const ex = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.058, 0.22, 6), steel(0x4b4d52, 0.3)); ex.rotation.z = Math.PI / 2; ex.position.set(rear + 0.02, 0.39, z * (0.62 + dz * 0.2));
-        add(ex, 'выхлоп', { delay: 2.6 + dz * 0.05, dur: 0.4, from: [-2, 0, 0], heavy: 0.05, vzPart: 'выхлоп' });
-        (body.userData.exhaust ||= []).push([rear - 0.12, 0.39, z * (0.62 + dz * 0.2)]);
-        const ring = new THREE.Mesh(new THREE.TorusGeometry(0.052, 0.008, 6, 6), new THREE.MeshStandardMaterial({ color: 0x1a1a1c, emissive: new THREE.Color('#ff3b12'), emissiveIntensity: 0, roughness: 0.3, metalness: 1 })); ring.rotation.y = Math.PI / 2; ring.position.set(rear - 0.1, 0.39, z * (0.62 + dz * 0.2));
-        add(ring, 'горячий срез', { delay: 2.7, dur: 0.3, from: [0, 0, 0], heavy: 0, vzPart: 'выхлоп' }); (body.userData.exhaustHot ||= []).push(ring.material);
-      }
+      const ex = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.06, 0.3, 28, 1, true), steel(0x6a5a48, 0.35)); ex.material.side = THREE.DoubleSide; ex.rotation.x = Math.PI / 2; ex.position.set(-0.4, 0.16, z * 1.0);
+      add(ex, 'боковой выхлоп', { delay: 2.6, dur: 0.4, from: [0, -1, z * 2], heavy: 0.05, vzPart: 'выхлоп' }); (body.userData.exhaust ||= []).push([-0.4, 0.16, z * 1.18]);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.058, 0.009, 8, 28), new THREE.MeshStandardMaterial({ color: 0x1a1a1c, emissive: new THREE.Color('#ff3b12'), emissiveIntensity: 0, roughness: 0.3, metalness: 1 })); ring.position.set(-0.4, 0.16, z * 1.15);
+      add(ring, 'горячий срез', { delay: 2.7, dur: 0.3, from: [0, 0, 0], heavy: 0, vzPart: 'выхлоп' }); (body.userData.exhaustHot ||= []).push(ring.material);
+      // стойки крыла («лебединая шея»)
+      const st = new THREE.Mesh(new RoundedBoxGeometry(0.34, 0.36, 0.025, 2, 0.01), carbon()); st.position.set(-2.1, 1.0, z * 0.42); st.rotation.z = -0.35;
+      add(st, 'стойка крыла', { delay: 6.5, dur: 0.4, from: [0, -3, 0], heavy: 0.02, vzPart: 'крыло' });
+      const ep = new THREE.Mesh(new RoundedBoxGeometry(0.5, 0.2, 0.02, 2, 0.008), carbon()); ep.position.set(-2.3, 1.15, z * 0.97); add(ep, 'торцевая шайба', { delay: 6.9, dur: 0.4, from: [0, 3, z * 2], heavy: 0.02, vzPart: 'крыло' });
     }
-    // красные акценты Label: вставки на нижней кромке и зеркала
-    for (const z of [-1, 1]) {
-      const mir = new THREE.Mesh(new RoundedBoxGeometry(0.12, 0.13, 0.22, 3, 0.03), black(0.35)); mir.position.set(0.95, 1.35, z * 1.06); add(mir, 'зеркало', { delay: 5.6, dur: 0.4, from: [0, 1, z * 2], heavy: 0.05, vzPart: 'зеркала' });
-      const mr = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.1), emis('#e11b22', 0.5)); mr.position.set(0.93, 1.27, z * 1.1); add(mr, 'акцент зеркала', { delay: 5.7, dur: 0.3, from: [0, 1, z * 2], heavy: 0, vzPart: 'зеркала' });
-      const sk = new THREE.Mesh(new RoundedBoxGeometry(2.7, 0.03, 0.04, 2, 0.01), new THREE.MeshStandardMaterial({ color: 0xe11b22, roughness: 0.4, emissive: new THREE.Color('#e11b22'), emissiveIntensity: 0.25 })); sk.position.set(-0.2, 0.34, z * 0.985);
-      add(sk, 'красный акцент порога', { delay: 5.5, dur: 0.4, from: [0, -1, z * 2], heavy: 0, vzPart: 'акценты' });
-    }
+    // нижний воздухозаборник: большая трапеция с сеткой и вертикальной перегородкой
+    const ish = new THREE.Shape(); ish.moveTo(-0.66, -0.1); ish.lineTo(0.66, -0.1); ish.lineTo(0.56, 0.13); ish.lineTo(-0.56, 0.13); ish.closePath();
+    const intake = new THREE.Mesh(new THREE.ShapeGeometry(ish), meshMat); intake.rotation.y = Math.PI / 2; intake.position.set(2.475, 0.28, 0);
+    add(intake, 'нижний воздухозаборник', { delay: 6.0, dur: 0.5, from: [2, 0, 0], heavy: 0.02, vzPart: 'воздухозаборник' });
+    const div = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.22, 0.015), black(0.3)); div.position.set(2.48, 0.29, 0); add(div, 'перегородка', { delay: 6.1, dur: 0.3, from: [1, 0, 0], heavy: 0, vzPart: 'воздухозаборник' });
+    // вентиляция капота
+    for (const z of [-1, 1]) { const hv = new THREE.Mesh(new RoundedBoxGeometry(0.42, 0.03, 0.2, 2, 0.012), black(0.5)); hv.position.set(1.6, 0.795, z * 0.34); hv.rotation.z = -0.12; add(hv, 'вентиляция капота', { delay: 3.7, dur: 0.4, from: [0, 2, 0], heavy: 0, vzPart: 'капот' }); }
+    // крыло
+    const wing = new THREE.Mesh(new RoundedBoxGeometry(0.42, 0.035, 1.92, 3, 0.012), carbon()); wing.position.set(-2.3, 1.18, 0); wing.rotation.z = 0.12;
+    add(wing, 'заднее крыло', { delay: 6.6, dur: 0.8, from: [-4, 5, 0], heavy: 0.3, vzPart: 'крыло' });
+    // солнцезащитная полоса на стекле (без надписей)
+    const band = new THREE.Mesh(loft(C, { x0: 0.38, x1: 0.62, steps: 6, M: 20, a0: 0.4, a1: Math.PI - 0.4, closed: false, inset: -0.004 }), black(0.3)); add(band, 'полоса на стекле', { delay: 5.1, dur: 0.3, from: [0, 2, 0], heavy: 0, vzPart: 'стёкла' });
   } else {
     // AMG ONE: узкие фары-серпы, большое крыло, шноркель, плавник, выхлоп по центру
     for (const z of [-1, 1]) {
@@ -295,10 +391,10 @@ export function buildCar(kind) {
       const tl = new THREE.Mesh(new RoundedBoxGeometry(0.04, 0.03, 0.58, 2, 0.01), emis('#ff1010', 0)); tl.position.set(-2.33, 0.9, z * 0.34);
       add(tl, 'задний огонь', { delay: 3.3, dur: 0.4, from: [-2, 0, 0], heavy: 0, vzPart: 'задние огни' }); (body.userData.tail ||= []).push(tl.material);
       // боковые воздуховоды и зеркала-камеры
-      const vent = new THREE.Mesh(new RoundedBoxGeometry(0.9, 0.12, 0.03, 2, 0.01), carbon()); vent.position.set(-0.5, 0.58, z * 0.998);
+      const vent = new THREE.Mesh(new RoundedBoxGeometry(0.9, 0.1, 0.02, 2, 0.008), carbon()); vent.position.set(-0.45, 0.5, z * (sample(S, 'w', -0.45) + 0.004));
       add(vent, 'боковой воздуховод', { delay: 5.6, dur: 0.5, from: [0, 1, z * 2], heavy: 0.05, vzPart: 'воздуховоды' });
       const mir = new THREE.Mesh(new RoundedBoxGeometry(0.1, 0.07, 0.16, 3, 0.025), carbon()); mir.position.set(0.75, 0.98, z * 1.0); add(mir, 'зеркало', { delay: 5.6, dur: 0.4, from: [0, 1, z * 2], heavy: 0.05, vzPart: 'зеркала' });
-      const cy = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.012, 0.02), emis('#19d2e8', 1.2)); cy.position.set(0.55, 0.43, z * 0.995);
+      const cy = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.012, 0.02), emis('#19d2e8', 1.2)); cy.position.set(0.55, 0.3, z * (sample(S, 'w', 0.55) + 0.006));
       add(cy, 'голубая линия', { delay: 5.8, dur: 0.4, from: [0, 0, z * 2], heavy: 0, vzPart: 'акценты' });
     }
     const snorkel = new THREE.Mesh(new RoundedBoxGeometry(0.75, 0.2, 0.42, 4, 0.06), carbon()); snorkel.position.set(-0.45, 1.3, 0); snorkel.rotation.z = 0.06;
@@ -327,38 +423,33 @@ export function buildCar(kind) {
   // ---- салон: руль и сиденья видны через стёкла
   const seatMat = new THREE.MeshStandardMaterial({ color: xm ? 0x1b1b1f : 0x15161a, roughness: 0.7 });
   for (const z of [-1, 1]) {
-    const sx = xm ? -0.25 : -0.22, sy = xm ? 0.82 : 0.38;
+    const sx = xm ? -0.35 : -0.22, sy = xm ? 0.36 : 0.38;
     const seat = new THREE.Mesh(new RoundedBoxGeometry(0.5, 0.12, 0.5, 3, 0.05), seatMat); seat.position.set(sx, sy, z * 0.38);
     const back = new THREE.Mesh(new RoundedBoxGeometry(0.1, 0.62, 0.5, 3, 0.04), seatMat); back.position.set(sx - 0.28, sy + 0.33, z * 0.38); back.rotation.z = -0.2;
     add(seat, 'сиденье', { delay: 3.9, dur: 0.4, from: [0, 3, 0], heavy: 0.02, vzPart: 'салон' }); add(back, 'спинка сиденья', { delay: 3.95, dur: 0.4, from: [0, 3, 0], heavy: 0.02, vzPart: 'салон' });
   }
-  const wheelS = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.016, 10, 40), black(0.5)); wheelS.position.set(xm ? 0.45 : 0.5, xm ? 1.06 : 0.62, xm ? -0.38 : -0.32); wheelS.rotation.y = Math.PI / 2; wheelS.rotation.x = 0.35;
+  const wheelS = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.016, 10, 40), black(0.5)); wheelS.position.set(xm ? 0.35 : 0.5, xm ? 0.7 : 0.62, xm ? -0.38 : -0.32); wheelS.rotation.y = Math.PI / 2; wheelS.rotation.x = 0.35;
   add(wheelS, 'руль', { delay: 4.0, dur: 0.4, from: [0, 3, 0], heavy: 0, vzPart: 'салон' });
-  const dash = new THREE.Mesh(new RoundedBoxGeometry(0.4, 0.14, 1.5, 3, 0.04), seatMat); dash.position.set(xm ? 0.88 : 0.95, xm ? 1.18 : 0.76, 0);
+  const dash = new THREE.Mesh(new RoundedBoxGeometry(0.4, 0.14, 1.5, 3, 0.04), seatMat); dash.position.set(xm ? 0.75 : 0.95, xm ? 0.8 : 0.76, 0);
   add(dash, 'панель приборов', { delay: 3.9, dur: 0.4, from: [0, 3, 0], heavy: 0, vzPart: 'салон' });
-  const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.12), emis(xm ? '#e11b22' : '#19d2e8', 0.4)); screen.position.set(xm ? 0.7 : 0.8, xm ? 1.2 : 0.8, 0); screen.rotation.y = Math.PI / 2 * -1 + Math.PI; screen.rotation.y = -Math.PI / 2;
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.12), emis(xm ? '#e11b22' : '#19d2e8', 0.4)); screen.position.set(xm ? 0.6 : 0.8, xm ? 0.84 : 0.8, 0); screen.rotation.y = Math.PI / 2 * -1 + Math.PI; screen.rotation.y = -Math.PI / 2;
   add(screen, 'экран', { delay: 4.0, dur: 0.3, from: [0, 3, 0], heavy: 0, vzPart: 'салон' }); body.userData.screen = screen.material;
 
   // ---- колёса
   const wheels = [];
-  const rimMat = xm ? new THREE.MeshStandardMaterial({ color: 0x111113, metalness: 1, roughness: 0.28 }) : steel(0xb7bcc4, 0.22);
+  const rimMat = xm ? new THREE.MeshStandardMaterial({ color: 0x141416, metalness: 1, roughness: 0.4 }) : steel(0xb7bcc4, 0.22);
   const caliperMat = new THREE.MeshStandardMaterial({ color: xm ? 0xd01820 : 0xe6b34a, metalness: 0.2, roughness: 0.35 });
   const archMat = new THREE.MeshBasicMaterial({ color: 0x020203, side: THREE.DoubleSide });
-  for (const [axle, ax, Rw, Ww] of [['перед', wb, R, xm ? 0.3 : 0.29], ['зад', -wb, RR, xm ? 0.3 : 0.34]]) {
+  for (const [axle, ax, Rw, Ww] of [['перед', wb, R, xm ? 0.31 : 0.29], ['зад', -wb, RR, xm ? 0.33 : 0.34]]) {
     for (const z of [-1, 1]) {
-      const w = makeWheel(Rw, Ww, { rim: xm ? 0.7 : 0.72, rimMat, caliperMat, spokes: xm ? 10 : 15, spokeW: xm ? 0.045 : 0.03, twin: !xm, lipMat: xm ? new THREE.MeshStandardMaterial({ color: 0xe11b22, roughness: 0.4, metalness: 0.4 }) : steel(0x2a2d31, 0.3), hubMat: xm ? new THREE.MeshStandardMaterial({ color: 0xe11b22, metalness: 0.3, roughness: 0.4 }) : steel(0x2a2d31, 0.3) });
+      const w = makeWheel(Rw, Ww, { rim: xm ? 0.68 : 0.72, rimMat, caliperMat, spokes: xm ? 6 : 15, spokeW: xm ? 0.06 : 0.03, twin: !xm, lipMat: xm ? black(0.4) : steel(0x2a2d31, 0.3), hubMat: xm ? steel(0xc9a24a, 0.3) : steel(0x2a2d31, 0.3) });
       const hw = sample(S, 'w', ax);
-      const zc = hw - Ww * 0.5 + 0.015;
+      const zc = hw - Ww * 0.5 - 0.012;
       w.position.set(ax, Rw, z * zc);
       if (z < 0) w.rotation.y = Math.PI;
       w.userData.name = `колесо ${axle}`; w.userData.dir = z;
       w.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
       root.add(w); wheels.push(w);
-      // имитация арки: чёрный диск и кромка кузова
-      const disc = new THREE.Mesh(new THREE.CircleGeometry(Rw + 0.07, 40), archMat); disc.position.set(ax, Rw, z * (hw + 0.004)); disc.rotation.y = z > 0 ? 0 : Math.PI;
-      add(disc, 'арка', { delay: 1.0, dur: 0.01, from: [0, 0, 0], heavy: 0, vzPart: 'арки' });
-      const lip = new THREE.Mesh(new THREE.TorusGeometry(Rw + 0.07, 0.024, 10, 40, Math.PI), xm ? black(0.4) : paintMat); lip.position.set(ax, Rw, z * (hw + 0.008)); lip.rotation.y = 0;
-      add(lip, 'кромка арки', { delay: 1.0, dur: 0.01, from: [0, 0, 0], heavy: 0, vzPart: 'арки' });
       w.userData.fromY = 0;
     }
   }
@@ -367,7 +458,7 @@ export function buildCar(kind) {
   wheels.forEach((w, i) => { w.userData.delay = 0.15 + i * 0.22; w.userData.dur = 0.8; w.userData.from = [0, 3, w.userData.dir * 5]; w.userData.final = w.position.clone(); });
 
   // ---- подвеска: контрольная точка силы крена/приседания
-  const car = { root, body, parts, wheels, S, L: xm ? 5.11 : 4.756, W: xm ? 2.005 : 2.01, H: xm ? 1.755 : 1.261, wb, R, RR, front, rear, accent, kind, lightMats: body.userData };
+  const car = { root, body, parts, wheels, S, L: xm ? 4.944 : 4.756, W: xm ? 2.046 : 2.01, H: xm ? 1.24 : 1.261, wb, R, RR, front, rear, accent, kind, lightMats: body.userData };
   return car;
 }
 
