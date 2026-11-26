@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { hash } from './cars.js';
+import { buildGarage } from './garage.js';
 
 const rnd = (i) => hash(i * 13.37 + 1.1);
 function canvasTex(w, h, draw, srgb = true, rep = [1, 1]) {
@@ -31,8 +32,8 @@ function asphaltMaps() {
   // лужи: тёмные гладкие пятна в карте шероховатости
   const rough = canvasTex(1024, 256, (g, w, h) => {
     g.fillStyle = '#b4b4b4'; g.fillRect(0, 0, w, h);
-    for (let i = 0; i < 70; i++) { const gr = g.createRadialGradient(0, 0, 0, 0, 0, 1); gr.addColorStop(0, 'rgba(10,10,10,0.95)'); gr.addColorStop(0.7, 'rgba(10,10,10,0.7)'); gr.addColorStop(1, 'rgba(10,10,10,0)'); g.save(); g.translate(rnd(i + 50) * w, rnd(i + 60) * h); g.scale(20 + rnd(i + 70) * 70, 8 + rnd(i + 80) * 26); g.fillStyle = gr; g.beginPath(); g.arc(0, 0, 1, 0, 7); g.fill(); g.restore(); }
-  }, false, [10, 1]);
+    for (let i = 0; i < 220; i++) { const gr = g.createRadialGradient(0, 0, 0, 0, 0, 1); gr.addColorStop(0, 'rgba(10,10,10,0.95)'); gr.addColorStop(0.7, 'rgba(10,10,10,0.7)'); gr.addColorStop(1, 'rgba(10,10,10,0)'); g.save(); g.translate(rnd(i + 50) * w, rnd(i + 60) * h); g.scale(6 + rnd(i + 70) * 22, 3 + rnd(i + 80) * 9); g.fillStyle = gr; g.beginPath(); g.arc(0, 0, 1, 0, 7); g.fill(); g.restore(); }
+  }, false, [30, 2]);
   return { col, rough };
 }
 export function glowTex() {
@@ -57,124 +58,15 @@ export function beam(color, len, r0, r1, opacity) {
 export function buildWorld(scene) {
   const W = { hangar: new THREE.Group(), strip: new THREE.Group(), anim: [], lights: {} };
   const name = (o, n) => { o.userData.vz = n; return o; };
-  // ---------------- ангар
-  const H = W.hangar; scene.add(H);
-  const cm = concreteMaps();
-  const floorMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: cm.col, roughnessMap: cm.rough, roughness: 0.55, metalness: 0, clearcoat: 0.35, clearcoatRoughness: 0.25 });
-  const floor = name(new THREE.Mesh(new THREE.PlaneGeometry(48, 32), floorMat), 'Бетонный пол'); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; H.add(floor);
-  // разметка
-  const paintY = new THREE.MeshStandardMaterial({ color: 0xd8b01e, roughness: 0.7 });
-  for (const z of [-5.2, 0, 5.2]) { const m = new THREE.Mesh(new THREE.PlaneGeometry(18, 0.12), paintY); m.rotation.x = -Math.PI / 2; m.position.set(-1, 0.003, z); m.receiveShadow = true; H.add(name(m, 'Разметка')); }
-  for (const z of [-2.6, 2.6]) { // круглые подиумы под машинами
-    const disk = new THREE.Mesh(new THREE.CylinderGeometry(3.6, 3.7, 0.08, 96), new THREE.MeshPhysicalMaterial({ color: 0x1b1c20, roughness: 0.25, metalness: 1, clearcoat: 0.6 })); disk.position.set(0, 0.04, z * 0 + z); disk.scale.z = 0.62; disk.receiveShadow = true; disk.castShadow = false; H.add(name(disk, 'Подиум'));
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(3.62, 0.02, 8, 128), new THREE.MeshBasicMaterial({ color: new THREE.Color(z < 0 ? '#3a7bff' : '#19d2e8').multiplyScalar(2.5), fog: false })); ring.rotation.x = Math.PI / 2; ring.scale.y = 0.62; ring.position.set(0, 0.085, z); H.add(name(ring, 'Подсветка подиума'));
-    W.anim.push({ kind: 'ring', obj: ring, z });
-  }
-  // стены: гофрированный металл (ряды тонких панелей), бетонный цоколь
-  const wallMat = new THREE.MeshStandardMaterial({ color: 0x4a4f57, roughness: 0.55, metalness: 1 });
-  const sockle = new THREE.MeshStandardMaterial({ color: 0x55575b, roughness: 0.9 });
-  const ribGeo = new THREE.BoxGeometry(0.08, 12, 0.5);
-  for (const side of [-1, 1]) {
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(48, 14, 0.2), wallMat); wall.position.set(0, 7, side * 16); H.add(name(wall, 'Стена ангара'));
-    const base = new THREE.Mesh(new THREE.BoxGeometry(48, 1.2, 0.3), sockle); base.position.set(0, 0.6, side * 15.9); H.add(name(base, 'Цоколь'));
-    for (let x = -23.5; x <= 23.5; x += 0.5) { const r = new THREE.Mesh(ribGeo, wallMat); r.position.set(x, 7.6, side * (15.85)); H.add(r); }
-  }
-  const back = new THREE.Mesh(new THREE.BoxGeometry(0.2, 14, 32), wallMat); back.position.set(-24, 7, 0); H.add(name(back, 'Задняя стена'));
-  // торцевая стена с проёмом ворот (x = 24): проём 17×10
-  for (const z of [-12.25, 12.25]) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.3, 14, 7.5), wallMat); p.position.set(24, 7, z); H.add(name(p, 'Стена ангара')); }
-  const lintel = new THREE.Mesh(new THREE.BoxGeometry(0.3, 4, 17), wallMat); lintel.position.set(24, 12, 0); H.add(name(lintel, 'Стена ангара'));
-  const doorMat = new THREE.MeshStandardMaterial({ color: 0x5b6068, roughness: 0.5, metalness: 1 });
-  W.doors = [];
-  for (const z of [-1, 1]) {
-    const d = new THREE.Group();
-    const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.25, 10, 8.5), doorMat); leaf.position.y = 5; leaf.castShadow = true; d.add(leaf);
-    for (let k = 0; k < 9; k++) { const rib = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, 8.5), doorMat); rib.position.set(-0.15, 0.6 + k * 1.1, 0); d.add(rib); }
-    const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.35, 8.5), new THREE.MeshStandardMaterial({ color: 0xd8b01e, roughness: 0.6 })); stripe.position.set(-0.14, 1.2, 0); d.add(stripe);
-    d.position.set(24, 0, z * 4.25); H.add(name(d, 'Ворота')); W.doors.push(d);
-  }
-  // крыша и фермы
-  const roof = new THREE.Mesh(new THREE.BoxGeometry(48, 0.3, 32), new THREE.MeshStandardMaterial({ color: 0x24272c, roughness: 0.8 })); roof.position.y = 14.2; H.add(name(roof, 'Крыша'));
-  const truss = new THREE.MeshStandardMaterial({ color: 0x2f3237, roughness: 0.6, metalness: 1 });
-  for (let x = -20; x <= 20; x += 5) {
-    const beamM = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.5, 32), truss); beamM.position.set(x, 13, 0); H.add(name(beamM, 'Ферма'));
-    const low = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 32), truss); low.position.set(x, 11.6, 0); H.add(name(low, 'Ферма'));
-    for (let z = -15; z <= 15; z += 2) { const dg = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.7, 0.08), truss); dg.position.set(x, 12.3, z); dg.rotation.x = (z / 2) % 2 ? 0.7 : -0.7; H.add(dg); }
-  }
-  // длинные лампы (светящиеся) + свечение
-  W.lamps = [];
-  const lampMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#d9e6ff').multiplyScalar(6), fog: false });
-  for (let x = -17.5; x <= 17.5; x += 5) for (const z of [-7, 0, 7]) {
-    const g = new THREE.Group(); g.position.set(x, 11.2, z);
-    const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.06, 3.2), lampMat); g.add(lamp);
-    const hood = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.15, 3.4), truss); hood.position.y = 0.1; g.add(hood);
-    for (const c of [-0.6, 0.6]) { const cable = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 1.4), truss); cable.position.set(0, 0.75, c * 2); g.add(cable); }
-    H.add(name(g, 'Лампа')); W.lamps.push({ g, lamp, on: 0, i: W.lamps.length });
-  }
-  // главный свет: верхний тёплый прожектор сбоку (≈45°), холодная заливка, контровой
-  const key = new THREE.SpotLight(0xffd6a8, 900, 60, 0.55, 0.6, 1.6); key.position.set(-10, 13, -11); key.target.position.set(0, 0.5, 0); key.castShadow = true; key.shadow.mapSize.set(2048, 2048); key.shadow.bias = -0.0002; key.shadow.normalBias = 0.02; key.shadow.camera.near = 4; key.shadow.camera.far = 50;
-  H.add(key, key.target); W.lights.key = key;
-  const rim = new THREE.SpotLight(0x9fc0ff, 500, 60, 0.6, 0.7, 1.6); rim.position.set(12, 9, 10); rim.target.position.set(0, 0.6, 0); H.add(rim, rim.target); W.lights.rim = rim;
-  const fill = new THREE.HemisphereLight(0x6f86b8, 0x2a2622, 0.35); scene.add(fill); W.lights.fill = fill;
-  // лучи в пыли от ламп и ключевого прожектора
-  W.beams = [];
-  const kb = beam('#ffcf9a', 22, 0.4, 5.5, 0.08); kb.position.copy(key.position); kb.lookAt(0, 0.5, 0); kb.rotateX(Math.PI / 2); H.add(kb); W.beams.push(kb);
-  // стеллажи, ящики, тележки, кабели, роботы-манипуляторы
-  const rackMat = new THREE.MeshStandardMaterial({ color: 0x2d5a9a, roughness: 0.6, metalness: 0.5 });
-  const boxMat = (i) => new THREE.MeshStandardMaterial({ color: new THREE.Color().setHSL(0.08 + rnd(i) * 0.05, 0.35, 0.25 + rnd(i + 1) * 0.15), roughness: 0.85 });
-  for (let k = 0; k < 6; k++) {
-    const rx = -20 + k * 6.5, rz = -14.6;
-    const rack = new THREE.Group(); rack.position.set(rx, 0, rz);
-    for (const px of [-1.4, 1.4]) for (const pz of [-0.5, 0.5]) { const post = new THREE.Mesh(new THREE.BoxGeometry(0.08, 4, 0.08), rackMat); post.position.set(px, 2, pz); rack.add(post); }
-    for (const y of [0.4, 1.6, 2.8, 3.9]) { const sh = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.06, 1.05), rackMat); sh.position.y = y; rack.add(sh);
-      for (let b = 0; b < 3; b++) { if (rnd(k * 31 + y * 7 + b) < 0.35) continue; const bx = new THREE.Mesh(new RoundedBoxGeometry(0.6 + rnd(b + k) * 0.3, 0.4 + rnd(b * 3 + k) * 0.4, 0.7, 2, 0.02), boxMat(k * 10 + b)); bx.position.set(-0.9 + b * 0.9, y + 0.25, 0); bx.rotation.y = (rnd(b * 5 + k) - 0.5) * 0.2; bx.castShadow = true; rack.add(bx); } }
-    H.add(name(rack, 'Стеллаж'));
-  }
-  const cartMat = new THREE.MeshStandardMaterial({ color: 0xb8261f, roughness: 0.45, metalness: 0.3 });
-  for (const [x, z, r] of [[-9, -8.5, 0.3], [7.5, 8.6, -0.4], [-12, 7.8, 0.9]]) {
-    const c = new THREE.Group(); c.position.set(x, 0, z); c.rotation.y = r;
-    const bx = new THREE.Mesh(new RoundedBoxGeometry(1.0, 0.9, 0.6, 3, 0.04), cartMat); bx.position.y = 0.6; bx.castShadow = true; c.add(bx);
-    for (let i = 0; i < 4; i++) { const dr = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.012, 0.01), steel()); dr.position.set(0, 0.35 + i * 0.2, 0.305); c.add(dr); }
-    for (const [wx, wz] of [[-0.4, -0.25], [0.4, -0.25], [-0.4, 0.25], [0.4, 0.25]]) { const wh = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.05, 16), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 })); wh.rotation.x = Math.PI / 2; wh.position.set(wx, 0.07, wz); c.add(wh); }
-    H.add(name(c, 'Тележка с инструментом'));
-  }
-  // кабели по полу
-  const cableMat = new THREE.MeshStandardMaterial({ color: 0x0d0d0e, roughness: 0.5 });
-  for (let k = 0; k < 5; k++) {
-    const pts = []; let x = -22 + k * 3, z = 15.5 - k * 0.4; for (let i = 0; i < 9; i++) { pts.push(new THREE.Vector3(x, 0.025, z)); x += 1.6 + rnd(k * 9 + i) * 1.4; z -= 0.6 + rnd(k * 7 + i) * 1.3; }
-    const tube = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 80, 0.022, 6), cableMat); tube.receiveShadow = true; H.add(name(tube, 'Кабели'));
-  }
-  // роботы-манипуляторы (сборка): основание, плечо, предплечье, кисть со светом
-  W.robots = [];
-  const robMat = new THREE.MeshStandardMaterial({ color: 0xe0a321, roughness: 0.45, metalness: 0.2 });
-  for (const [x, z, car] of [[-2.6, -7.6, 'bmw'], [2.6, -7.6, 'bmw'], [-2.6, 7.6, 'amg'], [2.6, 7.6, 'amg']]) {
-    const base = new THREE.Group(); base.position.set(x, 0, z);
-    const b0 = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.55, 0.5, 32), new THREE.MeshStandardMaterial({ color: 0x222428, roughness: 0.5, metalness: 1 })); b0.position.y = 0.25; base.add(b0);
-    const yaw = new THREE.Group(); yaw.position.y = 0.5; base.add(yaw);
-    const t0 = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.36, 0.5, 32), robMat); t0.position.y = 0.25; yaw.add(t0);
-    const sh = new THREE.Group(); sh.position.y = 0.55; yaw.add(sh);
-    const a1 = new THREE.Mesh(new RoundedBoxGeometry(0.28, 1.6, 0.3, 3, 0.06), robMat); a1.position.y = 0.8; a1.userData.vzPart = 'плечо'; sh.add(a1);
-    const el = new THREE.Group(); el.position.y = 1.6; sh.add(el);
-    const a2 = new THREE.Mesh(new RoundedBoxGeometry(0.22, 1.3, 0.24, 3, 0.05), robMat); a2.position.y = 0.65; el.add(a2);
-    const wr = new THREE.Group(); wr.position.y = 1.3; el.add(wr);
-    const tool = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.09, 0.3, 16), steel(0x9a9ea5, 0.3)); tool.position.y = 0.15; wr.add(tool);
-    const tip = glowSprite('#9fd0ff', 0.0); tip.position.y = 0.32; wr.add(tip);
-    base.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
-    H.add(name(base, 'Робот-манипулятор'));
-    W.robots.push({ base, yaw, sh, el, wr, tip, car, side: Math.sign(z), x });
-  }
-  // пыль в воздухе ангара
-  W.dust = [];
-  const dustMat = new THREE.PointsMaterial({ size: 0.035, color: 0xfff1dd, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending, map: (GLOW.t ||= glowTex()), fog: false });
-  const dg = new THREE.BufferGeometry(); const dp = []; for (let i = 0; i < 2500; i++) dp.push((rnd(i) - 0.5) * 40, rnd(i + 1e3) * 11, (rnd(i + 2e3) - 0.5) * 28);
-  dg.setAttribute('position', new THREE.Float32BufferAttribute(dp, 3)); const dust = new THREE.Points(dg, dustMat); H.add(name(dust, 'Пыль в воздухе')); W.dustPts = dust; W.dustBase = dp;
+  buildGarage(scene, W);
 
   // ---------------- полоса
   const S = W.strip; scene.add(S);
   const am = asphaltMaps();
   const asphalt = new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: am.col, roughnessMap: am.rough, roughness: 0.75, metalness: 0, clearcoat: 0.7, clearcoatRoughness: 0.08, clearcoatRoughnessMap: am.rough });
-  const runway = new THREE.Mesh(new THREE.PlaneGeometry(1400, 44, 1, 1), asphalt); runway.rotation.x = -Math.PI / 2; runway.position.set(24 + 700, 0.0, 0); runway.receiveShadow = true; S.add(name(runway, 'Мокрый асфальт'));
-  const apron = new THREE.Mesh(new THREE.PlaneGeometry(60, 80), asphalt); apron.rotation.x = -Math.PI / 2; apron.position.set(30, -0.01, 0); apron.receiveShadow = true; S.add(apron);
-  const grass = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshStandardMaterial({ color: 0x0d120c, roughness: 1 })); grass.rotation.x = -Math.PI / 2; grass.position.set(600, -0.03, 0); S.add(name(grass, 'Поле'));
+  const runway = new THREE.Mesh(new THREE.PlaneGeometry(1400, 44, 1, 1), asphalt); runway.rotation.x = -Math.PI / 2; runway.position.set(15 + 700, 0.0, 0); runway.receiveShadow = true; S.add(name(runway, 'Мокрый асфальт'));
+  const apron = new THREE.Mesh(new THREE.PlaneGeometry(60, 80), asphalt); apron.rotation.x = -Math.PI / 2; apron.position.set(44, -0.01, 0); apron.receiveShadow = true; S.add(apron);
+  const grass = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshStandardMaterial({ color: 0x050805, roughness: 1 })); grass.rotation.x = -Math.PI / 2; grass.position.set(600, -0.03, 0); S.add(name(grass, 'Поле'));
   const white = new THREE.MeshStandardMaterial({ color: 0xc9c9c4, roughness: 0.6, emissive: 0x111111 });
   for (let x = 40; x < 1300; x += 30) { const d = new THREE.Mesh(new THREE.PlaneGeometry(14, 0.35), white); d.rotation.x = -Math.PI / 2; d.position.set(x, 0.004, 0); S.add(d); }
   for (const z of [-21, 21]) { const e = new THREE.Mesh(new THREE.PlaneGeometry(1300, 0.4), white); e.rotation.x = -Math.PI / 2; e.position.set(24 + 650, 0.004, z); S.add(e); }
@@ -190,7 +82,47 @@ export function buildWorld(scene) {
   // стартовая и финишная линии, стартовый светофор
   const lineM = new THREE.MeshStandardMaterial({ color: 0xe8e8e2, roughness: 0.5 });
   const chk = canvasTex(256, 64, (g, w, h) => { for (let i = 0; i < 16; i++) for (let j = 0; j < 4; j++) { g.fillStyle = (i + j) % 2 ? '#111' : '#eee'; g.fillRect(i * 16, j * 16, 16, 16); } }, true);
-  W.lines = {};
+  // линии старта и финиша (шахматка)
+  for (const [x, nmL] of [[60, 'Линия старта'], [460, 'Линия финиша']]) { const l = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 20), new THREE.MeshStandardMaterial({ map: chk, roughness: 0.5 })); l.rotation.x = -Math.PI / 2; l.rotation.z = Math.PI / 2; l.position.set(x, 0.006, 0); l.receiveShadow = true; S.add(l); l.userData.vz = nmL; }
+  // финишная арка со светом
+  const arch = new THREE.Group(); arch.position.set(460, 0, 0);
+  for (const z of [-12, 12]) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.5, 7, 0.5), new THREE.MeshStandardMaterial({ color: 0x2a2d31, roughness: 0.5, metalness: 1 })); p.position.set(0, 3.5, z); arch.add(p); }
+  const beamA = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 24.5), new THREE.MeshStandardMaterial({ color: 0x1a1c20, roughness: 0.5, metalness: 1 })); beamA.position.y = 7; arch.add(beamA);
+  const strip = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.12, 24), new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffffff').multiplyScalar(5), fog: false })); strip.position.y = 6.55; arch.add(strip);
+  S.add(arch); arch.userData.vz = 'Финишная арка';
+  // прожекторные мачты каждые 60 м по обе стороны; свет «прилипает» к ближайшим мачтам у машин
+  W.towers = [];
+  const towerMat = new THREE.MeshStandardMaterial({ color: 0x3a3e44, roughness: 0.6, metalness: 1 });
+  for (let x = 40; x < 1300; x += 60) { const side = (Math.round(x / 60) % 2) ? 1 : -1, z = side * 27;
+    const t = new THREE.Group(); t.position.set(x, 0, z);
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.25, 16, 12), towerMat); pole.position.y = 8; t.add(pole);
+    const head = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.9, 0.3), towerMat); head.position.set(0, 16.2, -side * 0.3); t.add(head);
+    for (let i = 0; i < 4; i++) { const lamp = new THREE.Mesh(new THREE.PlaneGeometry(0.32, 0.32), new THREE.MeshBasicMaterial({ color: new THREE.Color('#fff1d6').multiplyScalar(8), fog: false, side: THREE.DoubleSide })); lamp.position.set(-0.55 + i * 0.37, 16.2, -side * 0.47); t.add(lamp); }
+    const gl = glowSprite('#ffe3b0', 6, 0.5); gl.position.set(0, 16.2, -side * 0.6); t.add(gl);
+    S.add(t); t.userData.vz = 'Прожекторная мачта'; W.towers.push({ x, z }); }
+  W.flood = [0, 1, 2].map(() => { const l = new THREE.SpotLight(0xffe7c4, 0, 120, 0.55, 0.7, 1.2); l.castShadow = false; S.add(l, l.target); return l; });
+  const moon = new THREE.DirectionalLight(0x9fb4ff, 0.0); moon.position.set(200, 120, -300); moon.target.position.set(300, 0, 0); S.add(moon, moon.target); W.lights.moon = moon;
+  // небо: градиент, звёзды, рассвет через uniform
+  const skyMat = new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, fog: false,
+    uniforms: { dawn: { value: 0 } },
+    vertexShader: 'varying vec3 p; void main(){ p = position; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
+    fragmentShader: `uniform float dawn; varying vec3 p; void main(){ vec3 d = normalize(p); float h = max(d.y, 0.0);
+      vec3 nightTop = vec3(0.004,0.008,0.025), nightHor = vec3(0.03,0.05,0.11), dawnTop = vec3(0.08,0.14,0.32), dawnHor = vec3(1.1,0.55,0.32);
+      float east = smoothstep(-0.2, 1.0, d.x);
+      vec3 top = mix(nightTop, dawnTop, dawn), hor = mix(nightHor, mix(nightHor, dawnHor, east), dawn);
+      vec3 c = mix(hor, top, pow(h, 0.45)); c += vec3(1.6,0.8,0.4) * dawn * pow(max(0.0, 1.0 - abs(d.y) * 6.0), 3.0) * pow(east, 3.0);
+      gl_FragColor = vec4(c, 1.0); }` });
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(1800, 48, 24), skyMat); sky.userData.vz = 'Небо'; scene.add(sky); W.sky = sky; W.skyMat = skyMat;
+  const sg = new THREE.BufferGeometry(); const sp = []; for (let i = 0; i < 2500; i++) { const u = rnd(i + 7e3) * 2 - 1, th = rnd(i + 8e3) * 6.283, yy = Math.abs(u) * 0.9 + 0.08; const r = Math.sqrt(1 - yy * yy); sp.push(Math.cos(th) * r * 1700, yy * 1700, Math.sin(th) * r * 1700); }
+  sg.setAttribute('position', new THREE.Float32BufferAttribute(sp, 3));
+  const stars = new THREE.Points(sg, new THREE.PointsMaterial({ size: 1.6, sizeAttenuation: false, color: 0xcfd8ff, transparent: true, opacity: 0.85, fog: false, depthWrite: false })); stars.userData.vz = 'Звёзды'; scene.add(stars); W.stars = stars;
+  // огни города на горизонте и диспетчерская вышка
+  for (let i = 0; i < 260; i++) { const x = 300 + rnd(i) * 1300, z = (rnd(i + 1) > 0.5 ? 1 : -1) * (300 + rnd(i + 2) * 500); const g2 = glowSprite(rnd(i + 3) > 0.3 ? '#ffb46a' : '#cfe0ff', 3 + rnd(i + 4) * 5, 0.7); g2.position.set(x, 2 + rnd(i + 5) * 8, z); S.add(g2); }
+  const tw = new THREE.Group(); tw.position.set(260, 0, -90);
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 3, 32, 16), new THREE.MeshStandardMaterial({ color: 0x2a2e35, roughness: 0.8 })); shaft.position.y = 16; tw.add(shaft);
+  const cab = new THREE.Mesh(new THREE.CylinderGeometry(5, 4, 4, 16), new THREE.MeshStandardMaterial({ color: 0x111317, emissive: new THREE.Color('#7fa8ff'), emissiveIntensity: 0.9, roughness: 0.2 })); cab.position.y = 34; tw.add(cab);
+  const beacon = glowSprite('#ff3b2f', 5, 0.9); beacon.position.y = 37.5; tw.add(beacon); W.beacon = beacon;
+  S.add(tw); tw.userData.vz = 'Диспетчерская вышка';
   return W;
 }
 const steel = (c = 0x9a9ea5, r = 0.35) => new THREE.MeshStandardMaterial({ color: c, metalness: 1, roughness: r });

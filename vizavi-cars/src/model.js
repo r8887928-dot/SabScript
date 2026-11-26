@@ -22,7 +22,30 @@ const STATIC_RE = /caliper|суппорт/i, HIDE_RE = /blurred/i;
  */
 const PART_RU = [[/tyre|tire/i, 'шины'], [/rim/i, 'диски'], [/brake_disk|disc/i, 'тормозные диски'], [/caliper/i, 'суппорты'], [/glass/i, 'стёкла'], [/carpaint|body|paint|coloured/i, 'кузов'], [/grille/i, 'решётка'], [/light|tail|blinker/i, 'фары'], [/int_|interior|seat|leather|steer/i, 'салон'], [/carbon|carb/i, 'карбон'], [/chrome/i, 'хром'], [/badge|logo/i, 'эмблемы'], [/engine/i, 'двигатель'], [/undercarriage|chassis/i, 'днище']];
 const partName = (n) => { for (const [re, ru] of PART_RU) if (re.test(n || '')) return ru; return 'детали'; };
+function upgradeMaterials(obj, o) {
+  const seen = new Map();
+  obj.traverse((m) => {
+    if (!m.isMesh) return;
+    if (!m.geometry.attributes.normal) m.geometry.computeVertexNormals();
+    const conv = (mt) => {
+      if (!mt || seen.has(mt)) return seen.get(mt) || mt;
+      let out = mt; const n = mt.name || '';
+      const tb = o.matTable && o.matTable[n];
+      if (tb) { out = new THREE.MeshPhysicalMaterial({ color: new THREE.Color(tb.c), map: mt.map || null, metalness: tb.m ?? 0, roughness: tb.r ?? 0.5, clearcoat: tb.cc ?? 0, clearcoatRoughness: 0.08, envMapIntensity: tb.env ?? 1, name: n }); out.flatShading = false; out.side = mt.side; seen.set(mt, out); return out; }
+      if (/carpaint|^paint$|_paint|body_?paint/i.test(n) && !/trim|carbon/i.test(n)) {
+        out = new THREE.MeshPhysicalMaterial({ color: new THREE.Color(o.paint || mt.color), map: o.paint ? null : mt.map, metalness: o.paintMetal ?? 0.9, roughness: o.paintRough ?? 0.3, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: o.paintEnv ?? 1.1, name: n });
+        out.userData.vzPaint = true;
+      } else if (/glass|skl/i.test(n)) {
+        out = new THREE.MeshPhysicalMaterial({ color: new THREE.Color(0x0b1016), metalness: 0, roughness: 0.03, transparent: true, opacity: 0.55, clearcoat: 1, envMapIntensity: 1.5, name: n, depthWrite: false });
+      } else if (/^tires?$|tyre/i.test(n)) { out = new THREE.MeshStandardMaterial({ color: 0x111113, map: mt.map, normalMap: mt.normalMap, roughness: 0.88, metalness: 0, name: n });
+      } else if (/chrome/i.test(n)) { mt.metalness = 1; mt.roughness = Math.min(mt.roughness ?? 0.2, 0.12); }
+      out.flatShading = false; out.side = mt.side; seen.set(mt, out); return out;
+    };
+    m.material = Array.isArray(m.material) ? m.material.map(conv) : conv(m.material);
+  });
+}
 export function carFromModel(obj, o) {
+  upgradeMaterials(obj, o);
   obj.updateMatrixWorld(true);
   const root = new THREE.Group(); root.userData.vz = o.name;
   const body = new THREE.Group(); root.add(body);

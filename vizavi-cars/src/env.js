@@ -11,7 +11,7 @@ export function makeEnv(renderer, kind = 'hangar') {
   sc.add(sky);
   const box = (w, h, d, x, y, z, col, I) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color: new THREE.Color(col).multiplyScalar(I) })); m.position.set(x, y, z); sc.add(m); return m; };
   if (kind === 'hangar') {
-    for (let i = -3; i <= 3; i++) box(0.5, 0.05, 30, i * 4.2, 18, 0, '#cfe0ff', 9); // потолочные лампы
+    for (let i = -3; i <= 3; i++) box(0.5, 0.05, 30, i * 4.2, 18, 0, '#cfe0ff', 4); // потолочные лампы
     box(30, 14, 0.2, 0, 8, -26, '#ffb870', 1.2); box(0.2, 8, 30, 26, 7, 0, '#9fb8ff', 1.4); box(0.2, 8, 30, -26, 7, 0, '#ffd0a0', 0.9);
     box(10, 0.1, 10, 0, -1, 0, '#ffffff', 0.12);
   } else if (kind === 'night') {
