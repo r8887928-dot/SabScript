@@ -32,7 +32,12 @@ bmw.root.position.set(0, 0, ZB); amg.root.position.set(0, 0, ZA); scene.add(bmw.
 // у модели Mercedes нет двигателя — ставим V8 5.5 битурбо в моторный отсек
 const v8 = buildV8({ name: 'Двигатель V8 5.5 битурбо', plate: 'V8 5.5 BITURBO', cover: '#2a2c31', coil: '#c0151b', alu: '#8b8f95' }); v8.position.set(1.42, 0.22, 0); amg.body.add(v8);
 // у BMW в модели только крышка мотора — ставим V8 4.4 твин-турбо (горячий развал)
-const v8b = buildV8({ name: 'Двигатель V8 4.4 твин-турбо', plate: 'V8 4.4 TWIN-TURBO', cover: '#0d0e11', coil: '#2a6bff', alu: '#5f646b' }); v8b.position.set(1.5, 0.3, 0); bmw.body.add(v8b);
+const v8b = buildV8({ name: 'Двигатель V8 4.4 твин-турбо', plate: 'V8 4.4 TWIN-TURBO', cover: '#0d0e11', coil: '#2a6bff', alu: '#5f646b', hotV: true }); v8b.position.set(1.5, 0.3, 0); bmw.body.add(v8b);
+const standMat = new THREE.MeshStandardMaterial({ color: 0xb3161b, roughness: 0.45, metalness: 0.4 });
+const mkStand = () => { const g = new THREE.Group(); const post = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.32, 0.08), standMat); post.position.y = -0.1; g.add(post);
+  const arm = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.05, 0.05), standMat); arm.position.y = 0.04; g.add(arm); const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.03, 20), standMat); plate.rotation.z = Math.PI / 2; plate.position.set(-0.28, 0.12, 0); g.add(plate);
+  const foot = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.04, 0.5), standMat); foot.position.y = -0.26; g.add(foot); g.traverse((m) => { if (m.isMesh) m.castShadow = true; }); g.userData.vz = 'Монтажный стенд'; g.visible = false; return g; };
+const standB = mkStand(); standB.position.set(0, 0.05, 0); v8b.add(standB); const standA = mkStand(); standA.position.set(0, 0.05, 0); v8.add(standA);
 for (const c of [bmw, amg]) { (c.lightMats.lens || []).forEach((m) => (m.emissiveIntensity = 0.35)); (c.lightMats.tail || []).forEach((m) => (m.emissiveIntensity = 0.6)); }
 // поворотные подиумы под машинами
 const turn = [];
@@ -75,7 +80,7 @@ export const T = { hook: 0, intro: 8, bExp: 24, bDet: 36, aExp: 62, aDet: 74, cm
 export const SCENES = [['Сцена 1: что внутри', 0, 8], ['Сцена 2: две машины', 8, 24], ['Сцена 3: разборка BMW', 24, 36], ['Сцена 4: мотор BMW', 36, 50], ['Сцена 5: колёса и салон BMW', 50, 62],
   ['Сцена 6: разборка Mercedes', 62, 74], ['Сцена 7: мотор Mercedes', 74, 88], ['Сцена 8: колёса и салон Mercedes', 88, 100], ['Сцена 9: сравнение', 100, 135], ['Сцена 10: сборка', 135, 160], ['Сцена 11: финал', 160, 180]];
 function explodeState(t) {
-  const hookB = t < 8 ? sm((t - 2.2) / 3.2) * 0.9 : 0;
+  const hookB = t < 8 ? sm((t - 2.2) / 4) * 0.22 : 0;
   const b = t < 8 ? hookB : t < T.back ? sm((t - T.bExp) / 9) : 1 - sm((t - T.back - 2) / 9);
   const a = t < T.back ? sm((t - T.aExp) / 9) : 1 - sm((t - T.back - 9) / 9);
   return { b: Math.max(0, b), a: Math.max(0, a) };
@@ -118,6 +123,16 @@ const K = [
 ];
 const cr = (p0, p1, p2, p3, u) => { const u2 = u * u, u3 = u2 * u; return 0.5 * ((2 * p1) + (-p0 + p2) * u + (2 * p0 - 5 * p1 + 4 * p2 - p3) * u2 + (-p0 + 3 * p1 - 3 * p2 + p3) * u3); };
 function camAt(t) {
+  const base = camAtKeys(t);
+  const c = CALL.find((x) => x.wheel !== undefined && t > x.a - 1.2 && t < x.b + 0.4);
+  if (!c) return base;
+  const tp = calloutPoint(c, new THREE.Vector3()); const side = c.car === 'bmw' ? -1 : 1;
+  const k = Math.min(1, (t - c.a + 1.2) / 1.0, (c.b + 0.4 - t) / 0.6), e = k * k * (3 - 2 * k);
+  const want = [tp.x + 1.25, tp.y + 0.32, tp.z + side * 1.55];
+  base.pos = base.pos.map((v, i) => v + (want[i] - v) * e); base.look = base.look.map((v, i) => v + ([tp.x, tp.y, tp.z][i] - v) * e);
+  base.fov = base.fov + (32 - base.fov) * e; base.focus = Math.hypot(base.pos[0] - tp.x, base.pos[1] - tp.y, base.pos[2] - tp.z); return base;
+}
+function camAtKeys(t) {
   let i = 0; while (i < K.length - 1 && K[i + 1].t <= t) i++;
   const k1 = K[i], k2 = K[Math.min(K.length - 1, i + 1)], same = k2 === k1 || k2.cut;
   const k0 = K[i - 1] && !k1.cut ? K[i - 1] : k1, k3 = K[i + 2] && !K[i + 2].cut ? K[i + 2] : (same ? k1 : k2);
@@ -158,10 +173,11 @@ const W3 = {
     const focus = CALL.find((c) => t > c.a - 1.2 && t < c.b + 0.3);
     const cpos = new THREE.Vector3(...camAt(t).pos), wp = new THREE.Vector3();
     for (const c of [bmw, amg]) { c.root.updateMatrixWorld(true); const iso = focus && (focus.car === (c === bmw ? 'bmw' : 'amg'));
-      const keep = !iso ? null : /мотор|V8/.test(focus.t) ? /днище/ : /Тормоза|привод/.test(focus.t) ? /днище|тормоз|суппорт/ : /днище|салон/;
+      const keep = !iso ? null : /мотор|V8/.test(focus.t) ? /^$/ : /Тормоза|привод/.test(focus.t) ? /днище|тормоз|суппорт/ : /днище|салон/;
       for (const p of c.parts) { p.obj.getWorldPosition(wp); let vis = p.obj.visible && wp.distanceTo(cpos) > 0.55; if (keep && !keep.test(p.name)) vis = false; p.obj.visible = vis; }
-      for (const w of c.wheels) w.visible = true;
+      for (const w of c.wheels) w.visible = !(iso && /V8/.test(focus.t));
     }
+    standB.visible = !!(focus && focus.car === 'bmw' && /V8/.test(focus.t)); standA.visible = !!(focus && focus.car === 'amg' && /V8/.test(focus.t));
     // подиумы крутятся во вступлении и в финале
     const spin = (t < T.bExp ? (t - 8) * 0.12 : 0) + (t > T.fin ? (t - T.fin) * 0.1 : 0);
     for (const [c, d] of [[bmw, turn[0]], [amg, turn[1]]]) { c.root.rotation.y = t > 8 && t < T.bExp ? spin * (c === bmw ? 1 : -1) * 0.35 : t > T.fin ? spin * (c === bmw ? 1 : -1) * 0.35 : 0; d.rotation.y = c.root.rotation.y; }
@@ -180,7 +196,7 @@ const W3 = {
   },
   camAt,
   jitterLights(k, N) { const d = E.disc(k, N); world.lights.key.position.set(-7 + d[0] * 0.5, 6.6, -7 + d[1] * 0.5); },
-  post(t) { const flash = Math.max(0, 1 - Math.abs(t - 7.95) / 0.2) * 2.5 + Math.max(0, 1 - Math.abs(t - (T.back + 18.5)) / 0.3) * 0.5; return { exposure: 0.85 * settings.exposure, bloom: 0.22 * settings.bloom, bloomThreshold: 2.2, bloomRadius: 0.35, vignette: 0.22 * settings.vignette, grain: 0.035 * settings.grain, flash, fade: Math.max(0, (t - 179) / 1) }; },
+  post(t) { const flash = 0 * Math.max(0, 1 - Math.abs(t - 7.95) / 0.2) + Math.max(0, 1 - Math.abs(t - (T.back + 18.5)) / 0.3) * 0.5; return { exposure: 0.85 * settings.exposure, bloom: 0.22 * settings.bloom, bloomThreshold: 2.2, bloomRadius: 0.35, vignette: 0.22 * settings.vignette, grain: 0.035 * settings.grain, flash, fade: Math.max(0, (t - 179) / 1, 1 - Math.abs(t - 8) / 0.35) }; },
   overlay(g, t, n, w, h) {
     if (!settings.labels) return;
     const S = Math.min(w, h) / 1080;
@@ -204,8 +220,8 @@ const W3 = {
       const bw = Math.min(w * 0.86, 980 * S), bh = 190 * S, bx = (w - bw) / 2, by = h * (vertical ? 0.14 : 0.08);
       g.globalAlpha = a; g.fillStyle = 'rgba(8,10,14,0.75)'; roundRect(g, bx, by, bw, bh, 18 * S); g.fill();
       g.fillStyle = '#ffffff'; g.font = `800 ${30 * S}px Inter, Arial, sans-serif`; g.textAlign = 'center'; g.fillText(bd.t, w / 2, by + 46 * S);
-      g.font = `900 ${64 * S}px Inter, Arial, sans-serif`; g.fillStyle = '#4d8dff'; g.fillText(bd.l, bx + bw * 0.27, by + 140 * S); g.fillStyle = '#ff4a66'; g.fillText(bd.r, bx + bw * 0.73, by + 140 * S);
-      g.fillStyle = '#8a93a3'; g.font = `700 ${22 * S}px Inter, Arial, sans-serif`; g.fillText('BMW M5', bx + bw * 0.27, by + 176 * S); g.fillText('CLS 63', bx + bw * 0.73, by + 176 * S);
+      g.font = `900 ${64 * S}px Inter, Arial, sans-serif`; g.fillStyle = '#4d8dff'; g.fillText(bd.l, bx + bw * 0.73, by + 140 * S); g.fillStyle = '#ff4a66'; g.fillText(bd.r, bx + bw * 0.27, by + 140 * S);
+      g.fillStyle = '#8a93a3'; g.font = `700 ${22 * S}px Inter, Arial, sans-serif`; g.fillText('BMW M5', bx + bw * 0.73, by + 176 * S); g.fillText('CLS 63', bx + bw * 0.27, by + 176 * S);
       g.textAlign = 'left'; g.globalAlpha = 1;
     }
     drawSubs(g, t, w, h);
@@ -221,9 +237,9 @@ function events() {
     for (const p of c.parts) if (p.heavy > 0.12) ev.push([st + 9 * (p.exDelay + 0.05), p.heavy > 0.35 ? 'hiss' : 'bolt', 0.4 + p.heavy * 0.5, pan]);
     ev.push([st + 1.0, 'air_wrench', 0.9, pan], [st + 3.2, 'servo', 0.8, pan], [st + 5.5, 'ratchet', 0.7, pan]);
   }
-  for (const c of CALL) ev.push([c.a - 0.3, 'whoosh', 0.55, 0], [c.a + 0.1, 'tick', 0.6, 0]);
-  for (const b of BOARDS) ev.push([b.a, 'whoosh', 0.5, 0], [b.a + 0.2, 'tick', 0.7, 0]);
-  ev.push([T.cmp + 2, 'engine_rev', 0.7, -0.4], [T.cmp + 9, 'engine_rev', 0.7, 0.4]);
+  for (const c of CALL) ev.push([c.a - 0.4, 'whoosh', 0.45, 0]);
+  for (const b of BOARDS) ev.push([b.a + 0.1, 'bolt', 0.5, 0]);
+  ev.push([T.cmp + 2, 'servo', 0.6, -0.4], [T.cmp + 9, 'hiss', 0.6, 0.4]);
   for (const [c, st, pan] of [[bmw, T.back + 2, -0.3], [amg, T.back + 9, 0.3]]) for (const p of c.parts) if (p.heavy > 0.2) ev.push([st + 9 * (1 - p.exDelay / 0.45 * 0.45) * 0.95, 'impact_metal', 0.4 + p.heavy * 0.6, pan]);
   ev.push([T.back + 18.5, 'light_on', 0.9, 0], [T.fin, 'engine_start', 0.8, -0.3], [T.fin + 1.3, 'engine_start', 0.8, 0.3], [T.fin + 3, 'engine_rev', 0.8, 0], [178.0, 'boom', 0.6, 0]);
   return ev.sort((a, b) => a[0] - b[0]);

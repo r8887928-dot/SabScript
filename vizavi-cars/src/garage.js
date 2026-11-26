@@ -27,7 +27,7 @@ export function buildGarage(scene, W) {
   const floor = nm(new THREE.Mesh(new THREE.PlaneGeometry(X1 - X0, Z1 - Z0), new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: floorCol, roughnessMap: floorRough, roughness: 0.45, clearcoat: 0.8, clearcoatRoughness: 0.05, envMapIntensity: 0.6 })), 'Наливной пол');
   floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; G.add(floor);
   // ---------------- стены: тёмно-серая покраска, нижняя панель, белая полоса, окна под потолком
-  const wallTex = ctex(512, 512, (g, w, h) => { g.fillStyle = '#3b3f45'; g.fillRect(0, 0, w, h); for (let i = 0; i < 4000; i++) { g.fillStyle = `rgba(255,255,255,${rnd(i) * 0.025})`; g.fillRect(rnd(i + 1) * w, rnd(i + 2) * h, 2, 2); } for (let y = 0; y < h; y += 64) { g.fillStyle = 'rgba(0,0,0,0.18)'; g.fillRect(0, y, w, 2); } for (let x = 0; x < w; x += 128) for (let y = 0; y < h; y += 64) { g.fillStyle = 'rgba(0,0,0,0.12)'; g.fillRect(x + ((y / 64) % 2) * 64, y, 2, 64); } }, [6, 2]);
+  const wallTex = ctex(512, 512, (g, w, h) => { g.fillStyle = '#5a6068'; g.fillRect(0, 0, w, h); for (let i = 0; i < 4000; i++) { g.fillStyle = `rgba(255,255,255,${rnd(i) * 0.025})`; g.fillRect(rnd(i + 1) * w, rnd(i + 2) * h, 2, 2); } for (let y = 0; y < h; y += 64) { g.fillStyle = 'rgba(0,0,0,0.18)'; g.fillRect(0, y, w, 2); } for (let x = 0; x < w; x += 128) for (let y = 0; y < h; y += 64) { g.fillStyle = 'rgba(0,0,0,0.12)'; g.fillRect(x + ((y / 64) % 2) * 64, y, 2, 64); } }, [6, 2]);
   const wallMat = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.85 });
   const wain = std(0x1d1f23, 0.5, 0.3), stripe = new THREE.MeshStandardMaterial({ color: 0xd9dde2, roughness: 0.5 });
   const wall = (w, h, x, z, ry) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), wallMat); m.position.set(x, h / 2, z); m.rotation.y = ry; m.receiveShadow = true; G.add(nm(m, 'Стена гаража')); };
@@ -173,9 +173,30 @@ export function buildGarage(scene, W) {
   const cableMat = std(0x0d0d0e, 0.5);
   for (let k = 0; k < 4; k++) { const pts = []; let x = X0 + 0.5, z = -6 + k * 1.1; for (let i = 0; i < 7; i++) { pts.push(new THREE.Vector3(x, 0.02, z)); x += 1.2 + rnd(k * 9 + i); z += (rnd(k * 5 + i) - 0.5) * 1.2; } const tube = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 60, 0.018, 6), cableMat); tube.receiveShadow = true; G.add(nm(tube, 'Кабели')); }
   // пыль в воздухе в лучах
-  const dustMat = new THREE.PointsMaterial({ size: 0.012, color: 0xfff1dd, transparent: true, opacity: 0.14, depthWrite: false, blending: THREE.AdditiveBlending, fog: false });
+  const dustMat = new THREE.PointsMaterial({ size: 0.012, color: 0xfff1dd, transparent: true, opacity: 0.05, depthWrite: false, blending: THREE.AdditiveBlending, fog: false });
   const dg = new THREE.BufferGeometry(); const dp = []; for (let i = 0; i < 700; i++) dp.push((rnd(i) - 0.5) * 18, 0.3 + rnd(i + 1e3) * 3.2, (rnd(i + 2e3) - 0.5) * 12);
   dg.setAttribute('position', new THREE.Float32BufferAttribute(dp, 3)); const dust = new THREE.Points(dg, dustMat); G.add(nm(dust, 'Пыль в воздухе')); W.dustPts = dust; W.dustBase = dp;
+  // ---------------- верх стен: окна под потолком, настенные светильники, светодиодная лента, фермы, постеры
+  const winHi = new THREE.MeshStandardMaterial({ color: 0x0a1020, emissive: new THREE.Color('#2a4a8a'), emissiveIntensity: 1.2, roughness: 0.1 });
+  const frameM = std(0x1c1f24, 0.5, 1);
+  for (const [z, ry] of [[Z0 + 0.06, 0], [Z1 - 0.06, Math.PI]]) for (let x = -12; x <= 12; x += 4) {
+    const wn = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 0.9), winHi); wn.position.set(x, 5.7, z); wn.rotation.y = ry; G.add(nm(wn, 'Окна под потолком'));
+    for (let k = 1; k < 4; k++) { const mul = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.9, 0.04), frameM); mul.position.set(x - 1.5 + k * 0.75, 5.7, z); G.add(mul); }
+    const lampBox = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 0.18), frameM); lampBox.position.set(x + 2, 4.3, z + (ry ? -0.1 : 0.1)); G.add(nm(lampBox, 'Настенный светильник'));
+    const lampFace = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.03, 0.14), new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffe2b8').multiplyScalar(5) })); lampFace.position.set(x + 2, 4.23, z + (ry ? -0.1 : 0.1)); G.add(lampFace);
+  }
+  for (const z of [Z0 + 0.1, Z1 - 0.1]) { const strip = new THREE.Mesh(new THREE.BoxGeometry(X1 - X0 - 1, 0.03, 0.03), new THREE.MeshBasicMaterial({ color: new THREE.Color('#9fc4ff').multiplyScalar(3) })); strip.position.set(0, 1.22, z); G.add(nm(strip, 'Светодиодная лента')); }
+  for (const z of [Z0 + 0.5, Z1 - 0.5]) { const wl = new THREE.PointLight(0xffd9b0, 16, 9, 2); wl.position.set(0, 4.0, z); G.add(wl); }
+  for (let x = -13; x <= 13; x += 6.5) { const tr = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.45, Z1 - Z0), std(0x2b2e33, 0.6, 1)); tr.position.set(x, HT - 0.25, 0); G.add(nm(tr, 'Ферма потолка')); }
+  const poster = (txt, sub, col, x, z, ry) => { const t = ctex(512, 720, (gg, w, h) => { gg.fillStyle = col; gg.fillRect(0, 0, w, h); gg.fillStyle = 'rgba(0,0,0,0.35)'; gg.fillRect(0, h * 0.62, w, h * 0.38); gg.fillStyle = '#fff'; gg.font = '900 120px Inter, Arial, sans-serif'; gg.textAlign = 'center'; gg.fillText(txt, w / 2, h * 0.45); gg.font = '700 44px Inter, Arial, sans-serif'; gg.fillText(sub, w / 2, h * 0.8); gg.strokeStyle = '#fff'; gg.lineWidth = 10; gg.strokeRect(20, 20, w - 40, h - 40); });
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.7), new THREE.MeshStandardMaterial({ map: t, roughness: 0.7 })); p.position.set(x, 2.9, z); p.rotation.y = ry; G.add(nm(p, 'Постер')); };
+  poster('V8', 'BITURBO POWER', '#8a1c22', -6, Z1 - 0.05, Math.PI); poster('400 M', 'DRAG NIGHT', '#1d3f8a', -3.6, Z1 - 0.05, Math.PI); poster('PIT', 'SERVICE ZONE', '#2a2d33', 9, Z0 + 0.05, 0);
+  // правая стена: второй щит с инструментом и стеллаж с колёсами
+  const board2 = new THREE.Mesh(new THREE.BoxGeometry(5, 1.8, 0.05), pegMat); board2.position.set(4, 2.6, Z1 - 0.06); G.add(nm(board2, 'Перфопанель'));
+  for (let k = 0; k < 14; k++) { const tool = new THREE.Mesh(new RoundedBoxGeometry(0.03, 0.3 + rnd(k + 90) * 0.2, 0.05, 2, 0.01), toolMats[k % 4]); tool.position.set(1.8 + k * 0.32, 2.7 + (rnd(k + 91) - 0.5) * 0.5, Z1 - 0.11); G.add(tool); }
+  const wheelRack = new THREE.Group(); wheelRack.position.set(10.5, 0, Z1 - 0.6);
+  for (let k = 0; k < 4; k++) { const wr = new THREE.Mesh(new THREE.TorusGeometry(0.33, 0.12, 14, 36), tireMat); wr.position.set(-1.2 + k * 0.8, 1.0, 0); wr.castShadow = true; wheelRack.add(wr); const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.2, 24), std(0xb8bec6, 0.25, 1)); rim.rotation.x = Math.PI / 2; rim.position.set(-1.2 + k * 0.8, 1.0, 0); wheelRack.add(rim); }
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.06, 0.06), rackMat); bar.position.y = 0.62; wheelRack.add(bar); G.add(nm(wheelRack, 'Стеллаж с колёсами'));
   W.lamps = [{ lamp: { material: hexMat, visible: true }, i: 0 }];
   W.robots = []; W.doors = null;
   return G;

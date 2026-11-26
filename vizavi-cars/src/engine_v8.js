@@ -25,10 +25,10 @@ export function buildV8(o = {}) {
     for (let i = 0; i < 4; i++) { const coil = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.05, 12), red); coil.position.set(-0.2 + i * 0.135, 0.22, 0); bank.add(coil); }
     for (let i = 0; i < 8; i++) { const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.01, 6), steelM); bolt.position.set(-0.27 + (i % 4) * 0.18, 0.21, (i < 4 ? -1 : 1) * 0.07); bank.add(bolt); }
     bank.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.userData.vzPart = 'головка и крышка клапанов'; } }); g.add(bank);
-    // выпускной коллектор: 4 трубки, сходятся к турбине
-    const tz = s * 0.36, ty = 0.32;
+    // выпускной коллектор: 4 трубки к турбине (hotV — в развал сверху, иначе — сбоку)
+    const tz = o.hotV ? s * 0.09 : s * 0.36, ty = o.hotV ? 0.66 : 0.32;
     for (let i = 0; i < 4; i++) {
-      const pts = [new THREE.Vector3(-0.21 + i * 0.14, 0.4, s * 0.27), new THREE.Vector3(-0.21 + i * 0.14, 0.34, s * 0.34), new THREE.Vector3(0.02, ty + 0.02, tz)];
+      const pts = o.hotV ? [new THREE.Vector3(-0.21 + i * 0.14, 0.5, s * 0.1), new THREE.Vector3(-0.21 + i * 0.14, 0.6, s * 0.08), new THREE.Vector3(0.0, ty, tz)] : [new THREE.Vector3(-0.21 + i * 0.14, 0.4, s * 0.27), new THREE.Vector3(-0.21 + i * 0.14, 0.34, s * 0.34), new THREE.Vector3(0.02, ty + 0.02, tz)];
       const tube = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 16, 0.017, 8), hot); tube.castShadow = true; tube.userData.vzPart = 'выпускной коллектор'; g.add(tube);
     }
     // турбина: улитка + корпус компрессора
@@ -40,8 +40,14 @@ export function buildV8(o = {}) {
     tg.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.userData.vzPart = 'турбина'; } }); g.add(tg);
     g.userData.hot ||= []; g.userData.hot.push(hot);
   }
-  // впуск между рядами
-  add(new THREE.Mesh(new RoundedBoxGeometry(0.5, 0.08, 0.14, 4, 0.03), alu), 'впускной коллектор').position.set(0, 0.56, 0);
+  // впуск: у hotV — два коллектора снаружи рядов, иначе — один между рядами
+  if (o.hotV) { for (const s of [-1, 1]) add(new THREE.Mesh(new RoundedBoxGeometry(0.5, 0.07, 0.1, 4, 0.03), alu), 'впускной коллектор').position.set(0, 0.5, s * 0.33); }
+  else add(new THREE.Mesh(new RoundedBoxGeometry(0.5, 0.08, 0.14, 4, 0.03), alu), 'впускной коллектор').position.set(0, 0.56, 0);
+  // навесное: генератор, компрессор кондиционера, масляный фильтр, проводка
+  const alt = add(new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.13, 24), alu), 'генератор'); alt.rotation.z = Math.PI / 2; alt.position.set(0.26, 0.42, -0.2);
+  const acc = add(new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.15, 24), cast), 'компрессор кондиционера'); acc.rotation.z = Math.PI / 2; acc.position.set(0.24, 0.2, 0.2);
+  const filt = add(new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.1, 20), red), 'масляный фильтр'); filt.position.set(-0.1, 0.13, 0.24); filt.rotation.x = 0.4;
+  for (let i = 0; i < 4; i++) { const pts2 = [new THREE.Vector3(-0.25 + i * 0.15, 0.62, 0), new THREE.Vector3(-0.2 + i * 0.12, 0.66, 0.12 * (i % 2 ? 1 : -1)), new THREE.Vector3(0.3, 0.6, 0.05)]; add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts2), 20, 0.006, 6), rubber), 'проводка'); }
   const tb = add(new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.08, 24), steelM), 'дроссель'); tb.rotation.z = Math.PI / 2; tb.position.set(0.3, 0.56, 0);
   for (const s of [-1, 1]) { const pipe = add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(0.34, 0.56, 0), new THREE.Vector3(0.38, 0.5, s * 0.15), new THREE.Vector3(0.24, 0.34, s * 0.4)]), 20, 0.028, 10), rubber), 'патрубки'); }
   // шкивы и ремень спереди (+x)
