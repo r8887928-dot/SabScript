@@ -14,6 +14,7 @@ import { VrMain, VR_FRAMES } from './vr/VrMain';
 import { ParMain, PAR_FRAMES } from './parable/ParMain';
 import { CoinMain, COIN_FRAMES } from './coins/CoinMain';
 import { MolMain, MOL_FRAMES } from './molasses/MolMain';
+import { SnowMain, SNOW_FRAMES } from './snowman/SnowMain';
 import { CsMain, CS_FRAMES } from './cs/CsMain';
 import { CoverGame, ThumbGame } from './game/Cover';
 import TL_GAME from './game/timeline.json';
@@ -27,6 +28,8 @@ export const RemotionRoot: React.FC = () => (
     <Composition id="LibertyFull" component={LibFull} durationInFrames={LIB_FULL_FRAMES} fps={FPS} width={W} height={H} defaultProps={{}} />
     <Composition id="LibertyShort" component={LibShort} durationInFrames={LIB_SHORT_FRAMES} fps={FPS} width={W} height={H} defaultProps={{}} />
     <Composition id="VrZone" component={VrMain} durationInFrames={VR_FRAMES} fps={FPS} width={W} height={H} defaultProps={{ q: { res: 1 } }} />
+    <Composition id="Snowman" component={SnowMain} durationInFrames={SNOW_FRAMES} fps={FPS} width={W} height={H} defaultProps={{ q: { res: 1 } }} />
+    <Composition id="SnowmanPreview" component={SnowMain} durationInFrames={SNOW_FRAMES} fps={FPS} width={W} height={H} defaultProps={{}} />
     <Composition id="Molasses" component={MolMain} durationInFrames={MOL_FRAMES} fps={FPS} width={W} height={H} defaultProps={{ q: { res: 1 } }} />
     <Composition id="MolassesPreview" component={MolMain} durationInFrames={MOL_FRAMES} fps={FPS} width={W} height={H} defaultProps={{}} />
     <Composition id="Coins" component={CoinMain} durationInFrames={COIN_FRAMES} fps={FPS} width={W} height={H} defaultProps={{ q: { res: 1 } }} />

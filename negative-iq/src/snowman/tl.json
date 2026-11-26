@@ -1,0 +1,324 @@
+{
+ "kind": "club",
+ "version": "snow",
+ "fps": 30,
+ "total": 43.2,
+ "frames": 1296,
+ "voiceLen": 1.0,
+ "voice": "assets/voice_snow/silence.wav",
+ "blocks": [],
+ "inserts": {
+  "OUTRO": {
+   "start": 43.2,
+   "dur": 0
+  }
+ },
+ "words": [],
+ "shots": [
+  {
+   "id": "s_build",
+   "t": 0.0,
+   "tr": "none",
+   "cap": "ОН ЛЕПИЛ ЕГО ЦЕЛЫЙ ЧАС",
+   "beats": [],
+   "from": 0,
+   "to": 108,
+   "dur": 108
+  },
+  {
+   "id": "s_nose",
+   "t": 3.6,
+   "tr": "cut",
+   "cap": "ОСТАЛСЯ НОС",
+   "beats": [],
+   "from": 108,
+   "to": 198,
+   "dur": 90
+  },
+  {
+   "id": "s_proud",
+   "t": 6.6,
+   "tr": "cut",
+   "cap": "ИДЕАЛЬНО",
+   "beats": [],
+   "from": 198,
+   "to": 276,
+   "dur": 78
+  },
+  {
+   "id": "s_leave",
+   "t": 9.2,
+   "tr": "cut",
+   "cap": "",
+   "beats": [],
+   "from": 276,
+   "to": 348,
+   "dur": 72
+  },
+  {
+   "id": "s_dog",
+   "t": 11.6,
+   "tr": "cut",
+   "cap": "НО ТУТ...",
+   "beats": [],
+   "from": 348,
+   "to": 438,
+   "dur": 90
+  },
+  {
+   "id": "s_steal",
+   "t": 14.6,
+   "tr": "cut",
+   "cap": "",
+   "beats": [],
+   "from": 438,
+   "to": 516,
+   "dur": 78
+  },
+  {
+   "id": "s_run",
+   "t": 17.2,
+   "tr": "whip",
+   "cap": "ХОП!",
+   "beats": [],
+   "from": 516,
+   "to": 582,
+   "dur": 66
+  },
+  {
+   "id": "s_wake",
+   "t": 19.4,
+   "tr": "cut",
+   "cap": "ОН НЕ ЗНАЛ ОДНОГО",
+   "beats": [],
+   "from": 582,
+   "to": 678,
+   "dur": 96
+  },
+  {
+   "id": "s_angry",
+   "t": 22.6,
+   "tr": "cut",
+   "cap": "",
+   "beats": [],
+   "from": 678,
+   "to": 738,
+   "dur": 60
+  },
+  {
+   "id": "s_chase",
+   "t": 24.6,
+   "tr": "flash",
+   "cap": "СНЕГОВИКИ ЖИВЫЕ",
+   "beats": [],
+   "from": 738,
+   "to": 858,
+   "dur": 120
+  },
+  {
+   "id": "s_look",
+   "t": 28.6,
+   "tr": "cut",
+   "cap": "",
+   "beats": [],
+   "from": 858,
+   "to": 924,
+   "dur": 66
+  },
+  {
+   "id": "s_catch",
+   "t": 30.8,
+   "tr": "cut",
+   "cap": "",
+   "beats": [],
+   "from": 924,
+   "to": 1020,
+   "dur": 96
+  },
+  {
+   "id": "s_back",
+   "t": 34.0,
+   "tr": "cut",
+   "cap": "ВЕРНИ НОС",
+   "beats": [],
+   "from": 1020,
+   "to": 1110,
+   "dur": 90
+  },
+  {
+   "id": "s_return",
+   "t": 37.0,
+   "tr": "cut",
+   "cap": "КАК БУДТО НИЧЕГО НЕ БЫЛО",
+   "beats": [],
+   "from": 1110,
+   "to": 1218,
+   "dur": 108
+  },
+  {
+   "id": "s_wink",
+   "t": 40.6,
+   "tr": "cut",
+   "cap": "",
+   "beats": [],
+   "from": 1218,
+   "to": 1296,
+   "dur": 78
+  }
+ ],
+ "chapters": [],
+ "subs": [],
+ "cues": {
+  "wind": {
+   "t": 0.0,
+   "kind": "wind",
+   "gain": -16
+  },
+  "crunch1": {
+   "t": 0.6,
+   "kind": "crumble",
+   "gain": -14
+  },
+  "crunch2": {
+   "t": 1.8,
+   "kind": "crumble",
+   "gain": -14
+  },
+  "pop_nose": {
+   "t": 5.2,
+   "kind": "pop",
+   "gain": -8
+  },
+  "proud": {
+   "t": 6.9,
+   "kind": "chip_achievement",
+   "gain": -12
+  },
+  "door": {
+   "t": 10.8,
+   "kind": "shutter",
+   "gain": -14
+  },
+  "steps_dog": {
+   "t": 11.8,
+   "kind": "footsteps",
+   "gain": -16
+  },
+  "sneak": {
+   "t": 12.1,
+   "kind": "tweety",
+   "gain": -18
+  },
+  "snatch": {
+   "t": 16.0,
+   "kind": "boing",
+   "gain": -8
+  },
+  "run": {
+   "t": 17.2,
+   "kind": "whoosh",
+   "gain": -10
+  },
+  "wake": {
+   "t": 20.6,
+   "kind": "reverse_beep",
+   "gain": -12
+  },
+  "blink": {
+   "t": 21.4,
+   "kind": "pop",
+   "gain": -12
+  },
+  "angry": {
+   "t": 22.8,
+   "kind": "impact_big",
+   "gain": -6
+  },
+  "chase": {
+   "t": 24.6,
+   "kind": "riser",
+   "gain": -10
+  },
+  "bounce1": {
+   "t": 25.2,
+   "kind": "thud",
+   "gain": -10
+  },
+  "bounce2": {
+   "t": 26.0,
+   "kind": "thud",
+   "gain": -10
+  },
+  "bounce3": {
+   "t": 26.8,
+   "kind": "thud",
+   "gain": -10
+  },
+  "bounce4": {
+   "t": 27.6,
+   "kind": "thud",
+   "gain": -10
+  },
+  "gulp": {
+   "t": 29.0,
+   "kind": "dumb_horn",
+   "gain": -10
+  },
+  "catch": {
+   "t": 32.6,
+   "kind": "bonk",
+   "gain": -6
+  },
+  "drop": {
+   "t": 34.6,
+   "kind": "pop",
+   "gain": -10
+  },
+  "put": {
+   "t": 38.0,
+   "kind": "pop",
+   "gain": -8
+  },
+  "door2": {
+   "t": 39.2,
+   "kind": "shutter",
+   "gain": -14
+  },
+  "wink": {
+   "t": 41.8,
+   "kind": "ding",
+   "gain": -8
+  }
+ },
+ "music": [
+  {
+   "mood": "morning",
+   "s": 0.0,
+   "e": 11.6
+  },
+  {
+   "mood": "comedy",
+   "s": 11.6,
+   "e": 19.4
+  },
+  {
+   "mood": "eerie",
+   "s": 19.4,
+   "e": 24.6
+  },
+  {
+   "mood": "chip_quest",
+   "s": 24.6,
+   "e": 37.0
+  },
+  {
+   "mood": "comedy",
+   "s": 37.0,
+   "e": 43.2
+  }
+ ],
+ "red": [],
+ "flashCues": [],
+ "title": null,
+ "outro": null
+}

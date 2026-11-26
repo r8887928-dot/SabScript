@@ -151,3 +151,60 @@ export const Card: React.FC<{ role: Role; pos: number[]; pose?: CardPose; h?: nu
     </group>
   );
 };
+
+// ------------------------------------------------------------------ dog card (side view, faces +x of the card; flip mirrors)
+export type DogPose = { run?: number; carrot?: boolean; expr?: 'sly' | 'shock' | 'sad' | 'happy'; scarf?: boolean; blink?: boolean };
+function drawDog(g: CanvasRenderingContext2D, W: number, H: number, p: DogPose) {
+  g.clearRect(0, 0, W, H); g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = INK;
+  const r = p.run ?? 0, base = 560;
+  const bob = Math.abs(Math.sin(r)) * 14;
+  // legs
+  g.lineWidth = 16;
+  const legs: [number, number][] = [[230, r], [300, r + Math.PI], [480, r + Math.PI], [550, r]];
+  for (const [x, ph] of legs) { const sw = Math.sin(ph) * 40 * (p.run !== undefined ? 1 : 0); g.beginPath(); g.moveTo(x, 420 - bob); g.lineTo(x + sw, base); g.stroke(); g.fillStyle = INK; g.beginPath(); g.ellipse(x + sw + 10, base + 4, 22, 10, 0, 0, 7); g.fill(); }
+  // tail
+  g.lineWidth = 18; g.beginPath(); g.moveTo(190, 360 - bob); g.quadraticCurveTo(120, 300 - bob + Math.sin(r * 2) * 30, 110, 230 - bob); g.stroke();
+  // body
+  g.fillStyle = '#c98a4b'; g.lineWidth = 12; g.beginPath(); g.ellipse(390, 360 - bob, 210, 95, 0, 0, 7); g.fill(); g.stroke();
+  g.fillStyle = '#f3e2c8'; g.beginPath(); g.ellipse(420, 400 - bob, 120, 40, 0, 0, 7); g.fill();
+  g.fillStyle = '#8a5a2b'; g.beginPath(); g.ellipse(330, 320 - bob, 60, 40, 0.3, 0, 7); g.fill();
+  if (p.scarf) { g.fillStyle = '#d8332b'; g.beginPath(); g.ellipse(560, 320 - bob, 50, 70, 0.4, 0, 7); g.fill(); g.stroke(); g.fillRect(540, 340 - bob, 30, 110); }
+  // head
+  const hx = 640, hy = 220 - bob;
+  g.fillStyle = '#c98a4b'; g.beginPath(); g.ellipse(hx, hy, 115, 105, 0, 0, 7); g.fill(); g.stroke();
+  g.fillStyle = '#f3e2c8'; g.beginPath(); g.ellipse(hx + 80, hy + 40, 75, 50, 0, 0, 7); g.fill(); g.stroke();
+  g.fillStyle = INK; g.beginPath(); g.ellipse(hx + 145, hy + 22, 22, 16, 0, 0, 7); g.fill();
+  g.fillStyle = '#6b3e1a'; g.beginPath(); g.ellipse(hx - 70, hy - 20, 38, 95, 0.35, 0, 7); g.fill(); g.stroke();
+  // eye + brow
+  const e = p.expr ?? 'happy';
+  if (p.blink) { g.lineWidth = 9; g.beginPath(); g.moveTo(hx + 5, hy - 25); g.lineTo(hx + 50, hy - 25); g.stroke(); }
+  else { g.fillStyle = '#fff'; g.lineWidth = 7; g.beginPath(); g.ellipse(hx + 28, hy - 28, e === 'shock' ? 30 : 24, e === 'sly' ? 14 : (e === 'shock' ? 34 : 26), 0, 0, 7); g.fill(); g.stroke(); g.fillStyle = INK; g.beginPath(); g.arc(hx + 36, hy - 26, e === 'shock' ? 9 : 11, 0, 7); g.fill(); }
+  g.lineWidth = 10; g.beginPath();
+  if (e === 'sly') { g.moveTo(hx - 5, hy - 62); g.lineTo(hx + 60, hy - 50); } else if (e === 'sad') { g.moveTo(hx - 5, hy - 50); g.lineTo(hx + 60, hy - 66); } else if (e === 'shock') { g.moveTo(hx, hy - 82); g.lineTo(hx + 60, hy - 86); } else { g.moveTo(hx, hy - 64); g.lineTo(hx + 60, hy - 64); }
+  g.stroke();
+  // mouth / carrot
+  if (p.carrot) { g.fillStyle = '#f07a1a'; g.beginPath(); g.moveTo(hx + 110, hy + 62); g.lineTo(hx + 300, hy + 40); g.lineTo(hx + 110, hy + 92); g.closePath(); g.fill(); g.stroke(); g.fillStyle = '#3f8a2a'; g.beginPath(); g.ellipse(hx + 100, hy + 76, 26, 12, 0.4, 0, 7); g.fill(); }
+  else if (e === 'shock') { g.fillStyle = '#5a1f2a'; g.beginPath(); g.ellipse(hx + 100, hy + 78, 24, 18, 0, 0, 7); g.fill(); g.stroke(); }
+  else { g.lineWidth = 8; g.beginPath(); g.moveTo(hx + 60, hy + 72); g.quadraticCurveTo(hx + 100, hy + (e === 'sad' ? 62 : 90), hx + 140, hy + 70); g.stroke(); }
+}
+/** dog card standing at pos; dir +1 faces +x in world, −1 faces −x */
+export const Dog: React.FC<{ pos: number[]; pose?: DogPose; dir?: number; f?: number; h?: number }> = ({ pos, pose = {}, dir = 1, f = 0, h = 0.9 }) => {
+  const cam = useContext(CamCtx);
+  const blink = pose.blink ?? (f % 59) < 4;
+  const run = pose.run === undefined ? undefined : Math.round((pose.run % (Math.PI * 2)) * 2) / 2;
+  const key = `dog_${run}_${pose.carrot ? 1 : 0}_${pose.expr}_${pose.scarf ? 1 : 0}_${blink ? 1 : 0}`;
+  const tex = canvasTex(key, 1000, 600, (g, W, H) => drawDog(g, W, H, { ...pose, run, blink }));
+  const m = useMemo(() => new THREE.MeshStandardMaterial({ transparent: true, alphaTest: 0.45, roughness: 0.95, side: THREE.DoubleSide }), []);
+  m.map = tex; m.needsUpdate = true;
+  const yaw = Math.atan2(cam[0] - pos[0], cam[2] - pos[2]);
+  // mirror so the dog's nose points along world dir as seen from the camera
+  const camRight = Math.cos(yaw);
+  const sx = Math.sign(camRight * dir) || 1;
+  const w = h * (1000 / 600) * 0.96;
+  return (
+    <group position={pos as any}>
+      <mesh rotation={[0, yaw, 0]} scale={[sx, 1, 1]} position={[0, h / 2 - h * 0.04, 0]} material={m} castShadow><planeGeometry args={[w, h]} /></mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]} material={basic('#1a0e10', { t: 0.35 })}><circleGeometry args={[w * 0.3, 20]} /></mesh>
+    </group>
+  );
+};
