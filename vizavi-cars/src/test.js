@@ -1,0 +1,24 @@
+import * as THREE from 'three';
+import { createEngine, drawFrame } from './engine.js';
+import { buildCar, assemble } from './cars.js';
+import { makeEnv } from './env.js';
+const q = new URLSearchParams(location.search);
+const W = +(q.get('w') || 960), H = +(q.get('h') || 540);
+const E = createEngine({ width: W, height: H });
+document.body.appendChild(E.renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0a0e18);
+scene.environment = makeEnv(E.renderer, 'hangar');
+const camera = new THREE.PerspectiveCamera(40, W / H, 0.1, 500);
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: 0x1a1c20, roughness: 0.45, metalness: 0.2 })); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+const bmw = buildCar('xm'), amg = buildCar('amg');
+bmw.root.position.set(0, 0, -2.6); amg.root.position.set(0, 0, 2.6);
+scene.add(bmw.root, amg.root);
+scene.add(new THREE.HemisphereLight(0x9fb2ff, 0x2a2018, 0.5));
+const key = new THREE.DirectionalLight(0xfff0dd, 3.2); key.position.set(-6, 9, 6); key.castShadow = true; key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, { left: -9, right: 9, top: 9, bottom: -9, near: 1, far: 30 }); key.shadow.bias = -0.0004; key.shadow.normalBias = 0.02; scene.add(key);
+const view = q.get('v') || 'side', T = +(q.get('t') || 20);
+const V = { side: [[0, 1.0, 12], [0, 0.8, 0], 30], front: [[11, 1.2, 0], [0, 0.8, 0], 32], q3: [[7, 1.8, 7], [0, 0.8, 0], 34], rear: [[-9, 1.4, -4], [0, 0.8, 0], 34], closeBmw: [[4.5, 1.0, -0.5], [2.4, 0.7, -2.6], 38], closeAmg: [[4.2, 0.9, 5.5], [1.8, 0.5, 2.6], 38] };
+const world = { scene, camera, update: (t) => { assemble(bmw, T); assemble(amg, T); for (const c of [bmw, amg]) { const ud = c.lightMats; (ud.drl || []).forEach((m) => (m.emissiveIntensity = 4)); (ud.lens || []).forEach((m) => (m.emissiveIntensity = 6)); (ud.tail || []).forEach((m) => (m.emissiveIntensity = 3)); if (ud.glowMat) ud.glowMat.emissiveIntensity = 3; } },
+  camAt: () => ({ pos: V[view][0], look: V[view][1], fov: V[view][2], aperture: 0.0 }), post: () => ({ exposure: 1.1, bloom: 0.35 }) };
+window.vizaviScene = { E, world, drawFrame: (n, N) => drawFrame(E, world, n, N) };
+window.sceneReady = true;
