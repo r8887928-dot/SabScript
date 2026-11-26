@@ -49,7 +49,7 @@ for b in tl['blocks']:
 _w = SR // 2
 _r = np.array([np.sqrt(np.mean(voice[0, i * _w:(i + 1) * _w] ** 2) + 1e-12) for i in range(N // _w)])
 _act = 20 * np.log10(_r) > -40
-_vg = db(-18.7) / np.median(_r[_act])
+_vg = db(-18.7) / np.median(_r[_act]) if _act.any() else 1.0  # wordless shorts: no voice to level
 voice *= _vg
 print('voice placed', len(tl['blocks']), 'blocks; voice gain %.1f dB' % (20 * np.log10(_vg)))
 
