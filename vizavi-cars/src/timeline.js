@@ -95,9 +95,9 @@ const K = [
   { t: 156.5, p: [2.5, 0.8, 10.5], l: [0, 0.7, 0], fov: 32, ap: 0.03, f: 'amg' },
   { t: 160.49, p: [START_X + FINISH + 2, 0.75, 10.5], l: [START_X + FINISH + 3, 0.8, 0], fov: 32, ap: 0.03 },
   // 14. рассвет: кран вверх
-  { t: 160.5, p: [START_X + FINISH + 20, 3, -14], l: [START_X + FINISH + 60, 0.8, 0], fov: 34, ap: 0.02, cut: true },
-  { t: 168, p: [START_X + FINISH + 40, 18, -32], l: [START_X + FINISH + 120, 0, 0], fov: 38, ap: 0.0 },
-  { t: 180, p: [START_X + FINISH + 30, 38, -46], l: [START_X + FINISH + 170, 0, 0], fov: 40, ap: 0.0 },
+  { t: 160.5, p: [START_X + FINISH + 120, 2.2, -12], l: [START_X + FINISH + 175, 0.8, 0], fov: 30, ap: 0.02, cut: true },
+  { t: 168, p: [START_X + FINISH + 150, 3.5, -13], l: [START_X + FINISH + 190, 0.8, 0], fov: 32, ap: 0.02 },
+  { t: 180, p: [START_X + FINISH + 160, 10, -20], l: [START_X + FINISH + 200, 0.6, 0], fov: 38, ap: 0.0 },
 ];
 export const CAM_KEYS = K;
 

@@ -58,7 +58,7 @@ GAIN = {'impact_metal': -11, 'bolt': -16, 'tick': -20, 'whoosh': -15, 'air_wrenc
         'roller_door': -11, 'beep': -12, 'boom': -5, 'riser': -14, 'servo': -15, 'hiss': -16, 'light_on': -12, 'glass': -16}
 last = {}
 for i, (t, typ, s, pan) in enumerate(ev):
-    base = {'tick': 'glass', 'beep_go': 'beep', 'passby_slow': 'passby', 'engine_rev_slow': 'engine_rev'}.get(typ, typ)
+    base = {'tick': 'glass', 'beep_go': 'beep', 'passby_slow': 'passby', 'engine_rev_slow': 'engine_rev', 'tire_slow': 'tire'}.get(typ, typ)
     # частые мелкие события не чаще раза в 0,12 с, чтобы не было «пулемёта»
     if typ in ('bolt', 'tick', 'impact_metal', 'hiss') and t - last.get(typ, -9) < (0.12 if typ != 'impact_metal' else 0.18): continue
     last[typ] = t
@@ -67,7 +67,7 @@ for i, (t, typ, s, pan) in enumerate(ev):
     f, h = pk; x = prep(f, LEN.get(base, 2.0))
     pitch = 1 + ((h % 1000) / 1000 - 0.5) * 0.08
     if typ == 'beep_go': pitch = 1.5
-    if typ in ('passby_slow', 'engine_rev_slow'): pitch = 0.55
+    if typ in ('passby_slow', 'engine_rev_slow', 'tire_slow'): pitch = 0.55
     x = resample(x, pitch) if abs(pitch - 1) > 0.005 else x
     g = db(GAIN.get(base, -14) + ((h >> 10) % 100 / 100 - 0.5) * 3) * (0.55 + 0.45 * s)
     pre = 0.35 if base in ('whoosh', 'passby') else 0.0  # пик пролёта — на событии

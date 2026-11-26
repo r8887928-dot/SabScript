@@ -66,7 +66,7 @@ export function buildWorld(scene) {
   const asphalt = new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: am.col, roughnessMap: am.rough, roughness: 0.75, metalness: 0, clearcoat: 0.7, clearcoatRoughness: 0.08, clearcoatRoughnessMap: am.rough });
   const runway = new THREE.Mesh(new THREE.PlaneGeometry(1400, 44, 1, 1), asphalt); runway.rotation.x = -Math.PI / 2; runway.position.set(15 + 700, 0.0, 0); runway.receiveShadow = true; S.add(name(runway, 'Мокрый асфальт'));
   const apron = new THREE.Mesh(new THREE.PlaneGeometry(60, 80), asphalt); apron.rotation.x = -Math.PI / 2; apron.position.set(44, -0.01, 0); apron.receiveShadow = true; S.add(apron);
-  const grass = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshStandardMaterial({ color: 0x050805, roughness: 1 })); grass.rotation.x = -Math.PI / 2; grass.position.set(600, -0.03, 0); S.add(name(grass, 'Поле'));
+  const grass = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshStandardMaterial({ color: 0x0f1912, roughness: 1 })); grass.rotation.x = -Math.PI / 2; grass.position.set(600, -0.03, 0); S.add(name(grass, 'Поле'));
   const white = new THREE.MeshStandardMaterial({ color: 0xc9c9c4, roughness: 0.6, emissive: 0x111111 });
   for (let x = 40; x < 1300; x += 30) { const d = new THREE.Mesh(new THREE.PlaneGeometry(14, 0.35), white); d.rotation.x = -Math.PI / 2; d.position.set(x, 0.004, 0); S.add(d); }
   for (const z of [-21, 21]) { const e = new THREE.Mesh(new THREE.PlaneGeometry(1300, 0.4), white); e.rotation.x = -Math.PI / 2; e.position.set(24 + 650, 0.004, z); S.add(e); }

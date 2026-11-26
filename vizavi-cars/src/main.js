@@ -6,7 +6,7 @@ import { buildCar, assemble } from './cars.js';
 import { makeEnv } from './env.js';
 import { buildWorld, glowSprite } from './world.js';
 import { loadModel, carFromModel } from './model.js';
-import { FPS, FRAMES, T, SCENES, LANE, carX, camAt, timeRate } from './timeline.js';
+import { FPS, FRAMES, T, SCENES, LANE, START_X, carX, camAt, timeRate, raceTime, finishTimes } from './timeline.js';
 
 const q = new URLSearchParams(location.search);
 const vertical = (window.VZ_FMT || q.get('fmt')) === 'v';
@@ -72,8 +72,8 @@ const W3 = {
   scene, camera,
   update(t) {
     // время сборки: хук (до 7 с) — машины уже собраны; затем сборка с нуля
-    const asmB = t < T.asmB ? 99 : (t - T.asmB - 0.6) * 0.62;
-    const asmA = t < T.asmB ? 99 : t < T.asmA ? -1 : (t - T.asmA - 0.4) * 0.62;
+    const asmB = t < T.asmB ? 99 : (t - T.asmB - 0.6) * 0.42;
+    const asmA = t < T.asmB ? 99 : t < T.asmA ? -1 : (t - T.asmA - 0.4) * 0.42;
     const lights = t < T.asmB ? 1 : ramp(t, T.lights, T.lights + 0.4);
     updateCar(bmw, t, asmB, lights); updateCar(amg, t, asmA, lights);
     // подъёмные ворота: ламели уезжают вверх по одной, сверху вниз
@@ -95,7 +95,7 @@ const W3 = {
     const dawn = ramp(t, T.finale, T.end - 3);
     world.skyMat.uniforms.dawn.value = dawn; world.stars.material.opacity = 0.85 * (1 - dawn);
     world.lights.moon.intensity = outside ? 0.5 + dawn * 2.2 : 0; world.lights.moon.color.set(dawn > 0.3 ? '#ffc9a0' : '#9fb4ff');
-    world.stars.visible = camera.position.x > 14 || t > T.gate + 6;
+    world.stars.visible = camera.position.x > 15.2;
     world.beacon.material.opacity = (Math.floor(t * 1.2) % 2) ? 0.9 : 0.15;
     // окружение и туман по актам
     const out = t > T.roll + 6;
@@ -122,11 +122,55 @@ const W3 = {
   camAt: (t) => { const c = camAt(t, vertical); c.aperture *= settings.blur; return c; },
   jitterLights(k, N) { const d = E.disc(k, N); world.lights.key.position.set(-7 + d[0] * 0.5, 6.6, -7 + d[1] * 0.5); },
   post(t) {
-    const flash = Math.max(0, 1 - Math.abs(t - 6.95) / 0.25) * 3 + Math.max(0, 1 - Math.abs(t - (T.lights + 0.15)) / 0.3) * 0.6;
+    const flash = Math.max(0, 1 - Math.abs(t - 6.97) / 0.1) * 1.1 + Math.max(0, 1 - Math.abs(t - (T.lights + 0.15)) / 0.3) * 0.6;
     return { exposure: (t > T.gate + 8 ? 0.95 : 0.82) * settings.exposure, bloom: 0.22 * settings.bloom, bloomThreshold: 2.2, bloomRadius: 0.35, vignette: 0.22 * settings.vignette, grain: 0.035 * settings.grain, flash, fade: Math.max(0, (t - 179) / 1) };
   },
-  overlay(g, t, n, w, h) { drawSubs(g, t, w, h); },
+  overlay(g, t, n, w, h) { drawBoards(g, t, w, h); drawHud(g, t, w, h); drawSubs(g, t, w, h); },
 };
+// ---- табло замеров, гоночный экран, итог
+function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+const BOARDS = [{ a: 53, b: 59, t: 'МОЩНОСТЬ', l: '625 л.с.', r: '585 л.с.' }, { a: 59, b: 65, t: 'КРУТЯЩИЙ МОМЕНТ', l: '750 Н·м', r: '800 Н·м' }, { a: 65, b: 77, t: '0–100 КМ/Ч', l: '3,3 с', r: '3,6 с' },
+  { a: 77, b: 89, t: 'МАКС. СКОРОСТЬ', l: '250 км/ч', r: '250 км/ч' }, { a: 89, b: 100, t: 'МАССА', l: '≈1890 кг', r: '≈1870 кг' }];
+function drawBoards(g, t, w, h) {
+  const S = Math.min(w, h) / 1080;
+  for (const bd of BOARDS) {
+    const a = Math.min(1, (t - bd.a) / 0.4, (bd.b - t) / 0.4); if (a <= 0) continue;
+    const bw = Math.min(w * 0.88, 980 * S), bh = 190 * S, bx = (w - bw) / 2, by = h * (vertical ? 0.13 : 0.07);
+    g.globalAlpha = a; g.fillStyle = 'rgba(8,10,14,0.75)'; rr(g, bx, by, bw, bh, 18 * S); g.fill();
+    g.textAlign = 'center'; g.fillStyle = '#ffffff'; g.font = `800 ${30 * S}px Inter, Arial, sans-serif`; g.fillText(bd.t, w / 2, by + 46 * S);
+    g.font = `900 ${64 * S}px Inter, Arial, sans-serif`; g.fillStyle = '#4d8dff'; g.fillText(bd.l, bx + bw * 0.27, by + 138 * S); g.fillStyle = '#ff4a66'; g.fillText(bd.r, bx + bw * 0.73, by + 138 * S);
+    g.fillStyle = '#8a93a3'; g.font = `700 ${22 * S}px Inter, Arial, sans-serif`; g.fillText('BMW M5', bx + bw * 0.27, by + 174 * S); g.fillText('CLS 63', bx + bw * 0.73, by + 174 * S);
+    g.textAlign = 'left'; g.globalAlpha = 1;
+  }
+}
+const fmt = (x, d = 2) => x.toFixed(d).replace('.', ',');
+function drawHud(g, t, w, h) {
+  const S = Math.min(w, h) / 1080;
+  if (t > T.go - 0.3 && t < T.finale + 5) {
+    const a = Math.min(1, (t - T.go + 0.3) / 0.3, (T.finale + 5 - t) / 0.5); const rt = raceTime(t);
+    const B = carX('bmw', t), A = carX('amg', t); const db = Math.max(0, B.x - START_X), da = Math.max(0, A.x - START_X);
+    const tb = Math.min(rt, finishTimes.bmw), ta = Math.min(rt, finishTimes.amg);
+    const bw = Math.min(w * 0.9, 1000 * S), bx = (w - bw) / 2, by = h * (vertical ? 0.1 : 0.04), bh = 150 * S;
+    g.globalAlpha = a; g.fillStyle = 'rgba(8,10,14,0.72)'; rr(g, bx, by, bw, bh, 16 * S); g.fill();
+    // полоса 0–400 м с двумя метками
+    const px = bx + 40 * S, pw = bw - 80 * S, py = by + bh - 34 * S;
+    g.fillStyle = 'rgba(255,255,255,0.18)'; g.fillRect(px, py, pw, 6 * S);
+    for (const [d, col] of [[db, '#4d8dff'], [da, '#ff4a66']]) { const x = px + pw * Math.min(1, d / 400); g.fillStyle = col; g.beginPath(); g.arc(x, py + 3 * S, 11 * S, 0, 7); g.fill(); }
+    g.fillStyle = '#ffffff'; g.fillRect(px + pw - 2 * S, py - 10 * S, 4 * S, 26 * S);
+    g.font = `800 ${30 * S}px Inter, Arial, sans-serif`;
+    g.fillStyle = '#4d8dff'; g.fillText(`BMW  ${Math.round(B.v * 3.6)} км/ч`, px, by + 50 * S); g.fillStyle = '#ffffff'; g.fillText(`${fmt(tb)} с`, px, by + 88 * S);
+    g.textAlign = 'right'; g.fillStyle = '#ff4a66'; g.fillText(`${Math.round(A.v * 3.6)} км/ч  CLS 63`, px + pw, by + 50 * S); g.fillStyle = '#ffffff'; g.fillText(`${fmt(ta)} с`, px + pw, by + 88 * S);
+    g.textAlign = 'center'; g.fillStyle = '#c9d2df'; g.font = `700 ${24 * S}px Inter, Arial, sans-serif`; g.fillText(rt >= finishTimes.bmw ? 'ФИНИШ' : `${Math.round(Math.max(db, da))} / 400 м`, w / 2, by + 50 * S);
+    g.textAlign = 'left'; g.globalAlpha = 1;
+  }
+  if (t > 166 && t < 180) {
+    const a = Math.min(1, (t - 166) / 0.6); const y = h * (vertical ? 0.24 : 0.2);
+    g.globalAlpha = a; g.textAlign = 'center'; g.lineJoin = 'round';
+    g.font = `900 ${(vertical ? 86 : 96) * S}px Inter, Arial, sans-serif`; g.lineWidth = 16 * S; g.strokeStyle = 'rgba(6,8,12,0.9)'; g.strokeText('ПОБЕДА: BMW M5', w / 2, y); g.fillStyle = '#ffffff'; g.fillText('ПОБЕДА: BMW M5', w / 2, y);
+    g.font = `700 ${40 * S}px Inter, Arial, sans-serif`; g.lineWidth = 10 * S; const s2 = `400 м: ${fmt(finishTimes.bmw)} с против ${fmt(finishTimes.amg)} с`; g.strokeText(s2, w / 2, y + 70 * S); g.fillStyle = '#ffd23a'; g.fillText(s2, w / 2, y + 70 * S);
+    g.textAlign = 'left'; g.globalAlpha = 1;
+  }
+}
 let quality = 8;
 const renderFrame = (n) => drawFrame(E, W3, n, quality);
 const aimCamera = (n) => { const t = n / FPS; W3.update(t); const c = camAt(t, vertical); camera.position.set(...c.pos); camera.lookAt(...c.look); camera.fov = c.fov; camera.updateProjectionMatrix(); };
@@ -135,14 +179,14 @@ const range = (name, key, max = 2) => ({ name, type: 'range', min: 0, max, step:
 function events() {
   const ev = [];
   for (const [c, st, pan] of [[bmw, T.asmB + 0.6, -0.3], [amg, T.asmA + 0.4, 0.3]]) {
-    for (const p of c.parts) { const tl = st + (p.delay + p.dur) / 0.62; if (tl < T.lights) ev.push([tl, p.heavy > 0.35 ? 'impact_metal' : p.heavy > 0.12 ? 'bolt' : 'tick', Math.min(1, 0.3 + p.heavy), pan]); }
-    for (const w of c.wheels) { const tl = st + (w.userData.delay + w.userData.dur) / 0.62; ev.push([tl, 'impact_metal', 0.8, pan], [tl + 0.25, 'air_wrench', 0.7, pan]); }
+    for (const p of c.parts) { const tl = st + (p.delay + p.dur) / 0.42; if (tl < T.lights) ev.push([tl, p.heavy > 0.35 ? 'impact_metal' : p.heavy > 0.12 ? 'bolt' : 'tick', Math.min(1, 0.3 + p.heavy), pan]); }
+    for (const w of c.wheels) { const tl = st + (w.userData.delay + w.userData.dur) / 0.42; ev.push([tl, 'impact_metal', 0.8, pan], [tl + 0.25, 'air_wrench', 0.7, pan]); }
   }
   ev.push([6.95, 'boom', 1, 0], [T.lights + 0.1, 'light_on', 0.9, 0], [T.lights + 0.3, 'engine_start', 0.7, -0.3], [T.lights + 1.4, 'engine_start', 0.7, 0.3]);
   for (const s of [54, 66, 78, 90]) ev.push([s, 'whoosh', 0.6, 0], [s + 0.6, 'engine_rev', 0.8, s % 24 ? 0.3 : -0.3]);
   ev.push([T.gate + 1, 'roller_door', 1, 0], [T.roll, 'engine_rev', 0.7, 0], [T.stage - 1, 'whoosh', 0.5, 0], [128, 'engine_rev', 0.9, -0.3], [129.5, 'engine_rev', 0.9, 0.3]);
-  ev.push([131.05, 'beep', 0.8, 0], [131.85, 'beep', 0.8, 0], [132.7, 'beep', 0.8, 0], [T.go, 'beep_go', 1, 0], [T.go, 'tire', 1, 0], [T.go + 0.05, 'boom', 0.9, 0], [T.go + 0.1, 'engine_rev_slow', 1, 0]);
-  ev.push([142, 'passby', 0.9, 0.6], [144.7, 'passby', 1, 0], [147.2, 'whoosh', 0.7, 0], [150.6, 'passby', 0.9, -0.5], [154.4, 'passby_slow', 1, 0.2], [157.1, 'passby_slow', 0.9, 0.2], [T.finale + 0.2, 'boom', 0.7, 0]);
+  ev.push([133.45, 'beep', 0.8, 0], [134.4, 'beep', 0.8, 0], [135.3, 'beep', 0.8, 0], [T.go, 'beep_go', 1, 0], [T.go, 'tire_slow', 1, 0], [T.go + 0.05, 'boom', 0.9, 0], [T.go + 0.1, 'engine_rev_slow', 1, 0], [T.slowEnd, 'engine_rev', 1, 0]);
+  ev.push([142, 'passby', 0.9, 0.6], [144.7, 'passby', 1, 0], [147.2, 'whoosh', 0.7, 0], [150.6, 'engine_rev', 0.5, -0.2], [154.4, 'passby_slow', 1, 0.2], [157.1, 'passby_slow', 0.9, 0.2], [T.finale + 0.2, 'boom', 0.7, 0]);
   return ev.sort((a, b) => a[0] - b[0]);
 }
 window.vizaviScene = {

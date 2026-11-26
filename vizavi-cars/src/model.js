@@ -29,9 +29,9 @@ function upgradeMaterials(obj, o) {
     if (!m.geometry.attributes.normal) m.geometry.computeVertexNormals();
     const conv = (mt) => {
       if (!mt || seen.has(mt)) return seen.get(mt) || mt;
-      let out = mt; const n = mt.name || '';
+      let out = mt; const n = mt.name || ''; mt.side = THREE.DoubleSide;
       const tb = o.matTable && o.matTable[n];
-      if (tb) { out = new THREE.MeshPhysicalMaterial({ color: new THREE.Color(tb.c), map: mt.map || null, metalness: tb.m ?? 0, roughness: tb.r ?? 0.5, clearcoat: tb.cc ?? 0, clearcoatRoughness: 0.08, envMapIntensity: tb.env ?? 1, name: n }); out.flatShading = false; out.side = mt.side; seen.set(mt, out); return out; }
+      if (tb) { out = new THREE.MeshPhysicalMaterial({ color: new THREE.Color(tb.c), map: mt.map || null, metalness: tb.m ?? 0, roughness: tb.r ?? 0.5, clearcoat: tb.cc ?? 0, clearcoatRoughness: 0.08, envMapIntensity: tb.env ?? 1, name: n }); out.flatShading = false; out.side = THREE.DoubleSide; seen.set(mt, out); return out; }
       if (/carpaint|^paint$|_paint|body_?paint/i.test(n) && !/trim|carbon/i.test(n)) {
         out = new THREE.MeshPhysicalMaterial({ color: new THREE.Color(o.paint || mt.color), map: o.paint ? null : mt.map, metalness: o.paintMetal ?? 0.9, roughness: o.paintRough ?? 0.3, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: o.paintEnv ?? 1.1, name: n });
         out.userData.vzPaint = true;
@@ -39,7 +39,7 @@ function upgradeMaterials(obj, o) {
         out = new THREE.MeshPhysicalMaterial({ color: new THREE.Color(0x0b1016), metalness: 0, roughness: 0.03, transparent: true, opacity: 0.55, clearcoat: 1, envMapIntensity: 1.5, name: n, depthWrite: false });
       } else if (/^tires?$|tyre/i.test(n)) { out = new THREE.MeshStandardMaterial({ color: 0x111113, map: mt.map, normalMap: mt.normalMap, roughness: 0.88, metalness: 0, name: n });
       } else if (/chrome/i.test(n)) { mt.metalness = 1; mt.roughness = Math.min(mt.roughness ?? 0.2, 0.12); }
-      out.flatShading = false; out.side = mt.side; seen.set(mt, out); return out;
+      out.flatShading = false; out.side = THREE.DoubleSide; seen.set(mt, out); return out;
     };
     m.material = Array.isArray(m.material) ? m.material.map(conv) : conv(m.material);
   });
@@ -76,7 +76,11 @@ export function carFromModel(obj, o) {
     mesh.position.copy(cc); body.add(mesh);
     const vol = sz.x * sz.y * sz.z; const dir = cc.clone().setY(0); if (dir.lengthSq() < 1e-4) dir.set(0, 0, 1); dir.normalize();
     const heavy = Math.min(1, vol / 2.0);
-    parts.push({ obj: mesh, base: cc.clone(), baseR: new THREE.Euler(), name: mesh.userData.vzPart, delay: 0.6 + (1 - heavy) * 5.5 + (i % 7) * 0.05, dur: 0.6 + heavy * 0.6, from: [dir.x * 6, 4 + heavy * 3, dir.z * 6], rot: [0, 0, 0], heavy });
+    // порядок сборки как на заводе: днище → мотор → салон → кузов → стёкла → хром, фары, эмблемы
+    const ORDER = { 'днище': 0.2, 'двигатель': 0.8, 'салон': 1.4, 'детали': 2.6, 'карбон': 3.4, 'кузов': 3.6, 'решётка': 4.6, 'стёкла': 5.0, 'хром': 5.6, 'фары': 5.9, 'эмблемы': 6.4 };
+    const ord = ORDER[mesh.userData.vzPart] ?? 2.6;
+    const jitter = ((cc.x + 3) * 0.13 + Math.abs(cc.z) * 0.21) % 0.9;
+    parts.push({ obj: mesh, base: cc.clone(), baseR: new THREE.Euler(), name: mesh.userData.vzPart, delay: ord + jitter, dur: 0.6 + heavy * 0.6, from: [dir.x * 6, 4 + heavy * 3, dir.z * 6], rot: [0, 0, 0], heavy });
   });
   // колёса: делим общие сетки (шины, диски, тормоза) на четыре по четвертям
   const quads = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
@@ -97,7 +101,7 @@ export function carFromModel(obj, o) {
     const wc = tb.getCenter(new THREE.Vector3()), ws = tb.getSize(new THREE.Vector3());
     const w = new THREE.Group(); w.position.copy(wc); const spin = new THREE.Group(); w.add(spin);
     for (const q of pieces) { q.geo.translate(-wc.x, -wc.y, -wc.z); const mm = new THREE.Mesh(q.geo, q.material); mm.castShadow = true; mm.receiveShadow = true; mm.userData.vzPart = partName(q.name); (q.static ? w : spin).add(mm); }
-    w.userData = { spin, R: ws.y / 2, dir: 1, delay: 0.15 + wheels.length * 0.22, dur: 0.8, from: [0, 3, sz * 5], final: wc.clone(), spinAxis: 'z' };
+    w.userData = { spin, R: ws.y / 2, dir: 1, delay: 2.0 + wheels.length * 0.3, dur: 0.8, from: [0, 3, sz * 5], final: wc.clone(), spinAxis: 'z' };
     w.userData.name = (sx > 0 ? 'переднее' : 'заднее') + ' колесо'; root.add(w); wheels.push(w);
   }
   // колёса по одной для вращения: если колесо одним мешем без явной оси — ось z
