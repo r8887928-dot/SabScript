@@ -6,7 +6,8 @@ const { chromium } = require('playwright'); const fs = require('fs');
   const p = await b.newPage({ viewport: { width: +w, height: +h } }); p.on('pageerror', (e) => console.log('PAGEERR', e.message));
   await p.goto(url); await p.waitForFunction(() => window.sceneReady, null, { timeout: 300000 });
   const frames = await p.evaluate(() => window.vizaviScene.frames); const t0 = Date.now(); let done = 0;
-  for (let f = 0; f < frames; f++) {
+  const only = process.argv[7] ? fs.readFileSync(process.argv[7], 'utf8').split(',').map(Number) : null;
+  for (const f of (only || Array.from({ length: frames }, (_, i) => i))) {
     const fn = `${dir}/f${String(f).padStart(5, '0')}.jpg`; if (fs.existsSync(fn) && fs.statSync(fn).size > 1000) continue;
     const d = await p.evaluate(([f, n]) => { window.vizaviScene.drawFrame(f, n); return window.vizaviScene.E.renderer.domElement.toDataURL('image/jpeg', 0.92); }, [f, +N]);
     fs.writeFileSync(fn + '.tmp', Buffer.from(d.split(',')[1], 'base64')); fs.renameSync(fn + '.tmp', fn); done++;
